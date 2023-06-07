@@ -1,15 +1,14 @@
 {
 	"target_sql" : "py",
 	//"inherit_from":["general_sql_specs.json"],
-	"CUSTOM_CONVERTER_MODULES" : ["/home/bladebridge/vijaypavann/new_configs/Converter/databricks_output_hooks_V2.dwsmod", "/home/bladebridge/vijaypavann/new_configs/Converter/snowflake_source_hooks.dwsmod"],
+	"CUSTOM_CONVERTER_MODULES" : ["databricks_output_hooks_v2.dwsmod", "snowflake_source_hooks.dwsmod"],
 	//"CUSTOM_CONVERTER_MODULES" : ["C:/Projects/Snowflake2Databricks/DBT/databricks_output_hooks_V2_DBT.pl", "C:/work/Projects/DWS/BBPerl/backend-perl-shared/Config/Converter/snowflake_source_hooks.pl"],
 	"COMBINED_CUSTOM_MODULES_LOAD" : 1, //loads all files at the same time to ensure vars can be shared
 	"initialize_hooks_call" : "::init_databricks_hooks", //initialize context, pass all relevant info
 	"source_prescan_routine" : "::snowflake_prescan",
 	"preprocess_file" : "1",
 	"preprocess_routine" : "::preprocess_for_databricks",
-	"is_dbt":"1",  // Convert to DBT Use 1 Else 0
-	"remove_alias":"1", // Remove Alias When table not found Use 1 Else 0
+	"is_dbt":"1",
 	"inceremental_header":"{{\nconfig(\n          materialized=\"incremental\",\n          pre_hook=[\"{{ create_functions() }}\", \"{{ provide_grants() }}\"],\n          alias= \"%_TARGET_%\",\n          on_schema_change = \"append_new_columns\",\n          incremental_strategy=\"replace_where\",\n          incremental_predicates= [%_PREDICATE_TYPE_%]\n      )\n}}\n",
 
 	"line_suppression_behavior":"ELIMINATE", //choices: COMMENT or ELIMINATE

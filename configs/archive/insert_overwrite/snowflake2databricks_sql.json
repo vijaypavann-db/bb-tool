@@ -1,16 +1,15 @@
 {
 	"target_sql" : "py",
 	//"inherit_from":["general_sql_specs.json"],
-	"CUSTOM_CONVERTER_MODULES" : ["/home/bladebridge/vijaypavann/new_configs/Converter/databricks_output_hooks_V2.dwsmod", "/home/bladebridge/vijaypavann/new_configs/Converter/snowflake_source_hooks.dwsmod"],
-	//"CUSTOM_CONVERTER_MODULES" : ["C:/Projects/Snowflake2Databricks/DBT/databricks_output_hooks_V2_DBT.pl", "C:/work/Projects/DWS/BBPerl/backend-perl-shared/Config/Converter/snowflake_source_hooks.pl"],
+	"CUSTOM_CONVERTER_MODULES" : ["!BB_CONFIG_CONVERTER!/Converter/databricks_output_hooks_v2.dwsmod", "!BB_CONFIG_CONVERTER!/Converter/snowflake_source_hooks.dwsmod"],
+	//"CUSTOM_CONVERTER_MODULES" : ["C:/projects/Snowflake2Databricks/Config/databricks_output_hooks_v2.pl", "C:/projects/Snowflake2Databricks/Config/snowflake_source_hooks.pl"],
 	"COMBINED_CUSTOM_MODULES_LOAD" : 1, //loads all files at the same time to ensure vars can be shared
 	"initialize_hooks_call" : "::init_databricks_hooks", //initialize context, pass all relevant info
 	"source_prescan_routine" : "::snowflake_prescan",
 	"preprocess_file" : "1",
 	"preprocess_routine" : "::preprocess_for_databricks",
-	"is_dbt":"1",  // Convert to DBT Use 1 Else 0
-	"remove_alias":"1", // Remove Alias When table not found Use 1 Else 0
-	"inceremental_header":"{{\nconfig(\n          materialized=\"incremental\",\n          pre_hook=[\"{{ create_functions() }}\", \"{{ provide_grants() }}\"],\n          alias= \"%_TARGET_%\",\n          on_schema_change = \"append_new_columns\",\n          incremental_strategy=\"replace_where\",\n          incremental_predicates= [%_PREDICATE_TYPE_%]\n      )\n}}\n",
+	
+	
 
 	"line_suppression_behavior":"ELIMINATE", //choices: COMMENT or ELIMINATE
 	"code_fragment_breakers": {
@@ -24,7 +23,7 @@
     {"category": "TABLE_DDL", "patterns" : [".*?CREATE\s+TABLE",".*?CREATE\s+SET.*\s+TABLE",".*?CREATE\s+MULTISET.*\s+TABLE",".*?CREATE\s+VOLATILE.*\s+TABLE",".*?CREATE\s+TEMP.*\s+TABLE",".*?CREATE\s+GLOBAL\s+TEMPORARY",".*?CREATE\s+PRIVATE\s+TEMPORARY",".*?CREATE\s+LOCAL\s+TEMPORARY"]},
 	//{"category": "CREATE_PROCEDURE", "patterns" : [".*CREATE PROCEDURE \((.*?)\).*;", ".*CREATE\s*OR\s*REPLACE\s*PROCEDURE", ".*CREATE\s*PROCEDURE", ".*REPLACE\s*PROCEDURE"]},
 	//{"category": "CREATE_FUNCTION", "patterns" : [".*?\bCREATE\s+OR\s+REPLACE\s+FUNCTION\b", ".*?\bCREATE\s+FUNCTION\b","FUNCTION\s+(\"?\w+\"?\.?\"?\w*\"?)"]},
-    {"category": "COPY_INTO_FILE", "patterns" : ["COPY\s+INTO\s+\w+","COPY\s+INTO\s+\'"]}, 
+
 	//{"category": "SWITCH", "patterns" : ["switch\s*\(.*?\)\s*\{.*?\}"]},
 	{"category": "VALUE_COLUMNS", "patterns" : [".*select.*?from\s+values"]},
 	{"category": "INSERT_ALL", "patterns" : [".*INSERT\s+ALL"]},
@@ -37,7 +36,6 @@
 
 	"fragment_handling" : {
 	//"SWITCH" : "::switch",	
-    "COPY_INTO_FILE" : "::copy_into_files",
 	"VALUE_COLUMNS" : "::value_columns",
 	"CREATE_PROCEDURE" : "::databricks_proc_arg_defs",
 	"CREATE_FUNCTION" : "::databricks_function_arg_defs",
@@ -61,11 +59,11 @@
 		{"from" : "math\.abs", "to" : "abs"},
 		{"from" : "(?<!\_DONE\_)(\bENABLE|\bDISABLE\b|\bVALIDATE\b|\bNOVALIDATE\b|\bRELY\b)", "to" : "_DONE_$1 -- FIX ME databricks.migration.unsupported.feature"},
 		{"from" : "\bNUMBER\b(?!\s*\()", "to" : "NUMERIC","statement_categories" : ["TABLE_DDL"]},
-		{"from" : "AS\s+\bNUMBER\b(?!\s*\()", "to" : "AS NUMERIC "},
-		{"from" : "\:\:NUMBER\b\s*(?!\()", "to" : "::NUMERIC "},
+		{"from" : "AS\s+\bNUMBER\b(?!\s*\()", "to" : "AS NUMERIC"},
+		{"from" : "\:\:NUMBER\b\s*(?!\()", "to" : "\:\:NUMERIC"},
 		{"from" : "\bNUMBER\b\s*\(", "to" : "NUMERIC("},
-		{"from" : "AS\s+\bNUMBER\b", "to" : "AS NUMERIC "},
-		{"from" : "\:\:NUMBER\b(?!\s*\()", "to" : "::NUMERIC "},
+		{"from" : "AS\s+\bNUMBER\b", "to" : "AS NUMERIC"},
+		{"from" : "\:\:NUMBER\b(?!\s*\()", "to" : "::NUMERIC"},
 	    {"from" : "\bNUMBER\b\s*\(", "to" : "NUMERIC("},
 		{"from" : "\bNUMBER\b", "to" : "NUMERIC","statement_categories" : ["TABLE_DDL"]},
 		{"from" : "\bNUMBER\b\s*\(", "to" : "NUMERIC("},
@@ -420,18 +418,9 @@
 		{"from" : "partition by (\w+\s*)\)", "to" : "PARTITION BY $1 ORDER BY 1 )"},
 		{"from" : "partition by (\w+\s*\,\s*\w+\s*)\)", "to" : "PARTITION BY $1 ORDER BY 1 )"},
 		{"from" : "partition by (\w+\s*\,\s*\w+\s*\,\s*\w+\s*)\)", "to" : "PARTITION BY $1 ORDER BY 1 )"},
-		{"from" : "partition by (\w+\s*\,\s*\w+\s*\,\s*\w+\s*\,\s*\w+\s*)\)", "to" : "PARTITION BY $1 ORDER BY 1 )"},
-		{"from" : "(\w+\.)value\:", "to" : "$1"},
-		{"from" : "(\w*\.*\w+\b)\:\:NUMERIC", "to" : "CAST($1 AS DECIMAL(38,0))"},
-		{"from" : "(\w*\.*\w+\b)\:\:FLOAT", "to" : "CAST($1 AS DOUBLE)"},
-		{"from" : "(\w*\.*\w+\b)\:\:STRING", "to" : "CAST($1 AS STRING)"},
-		{"from" : "(\w*\.*\w+\b)\:\:date", "to" : "CAST($1 AS DATE)"},
-		{"from" : "timestamp_ntz\s*\(\s*\d+\s*\)", "to" : "TIMESTAMP"},
-		{"from" : "\bDATE\s*\(", "to" : "TO_DATE("},
-		{"from" : "BEGIN\s+TRANSACTION\b\s*\;", "to" : ""},
-        {"from" : "\bCOMMIT\b\;", "to" : ""}
-		
-		//change back from NOT_NULL to NOT NULL
+		{"from" : "partition by (\w+\s*\,\s*\w+\s*\,\s*\w+\s*\,\s*\w+\s*)\)", "to" : "PARTITION BY $1 ORDER BY 1 )"}
+
+        		//change back from NOT_NULL to NOT NULL
 
 
 	],
@@ -463,7 +452,7 @@
 
 		{"from" : "comment\s*\=" ,"to" : "comment"},
 		{"from" : "(?<!\_DONE\_)(select.*?match_recognize)" ,"to" : "-- FIXME. databricks.migrations.unsupported  match_recognize clause\n_DONE_$1"},
-		//{"from" : "(?<!\_DONE\_)(select.*?=>)" ,"to" : "-- FIXME. databricks.migrations.unsupported  Named  paramaters in function call\n_DONE_$1"},
+		{"from" : "(?<!\_DONE\_)(select.*?=>)" ,"to" : "-- FIXME. databricks.migrations.unsupported  Named  paramaters in function call\n_DONE_$1"},
       	{"from" : "(?<!\_DONE\_)(pivot.*for)(.*?)(as\s+\w+)" ,"to" : "_DONE_$1 $3 $2"},
 	    {"from" : "(?<!\_DONE\_)(with\s+recursive)" ,"to" : "-- FIXME. databricks.migrations.unsupported  Recurive CTE\n_DONE_$1"},
 		{"from" : "(?<!\_DONE\_)(select.*?start\s+with.*?connect\b)" ,"to" : "-- FIXME. databricks.migrations.unsupported  Hierarchical Query\n_DONE_$1"},
@@ -476,7 +465,7 @@
 		{"from" : "(?<!\_DONE\_)(select.*?nextval)", "to" : "-- FIXME databricks.migration.unsupported.feature sequence\n_DONE_$1"},
 		{"from" : "(?<!\_DONE\_)(select.*?curval)", "to" : "-- FIXME databricks.migration.unsupported.feature sequence\n_DONE_$1"},
 		{"from" : "(?<!\_DONE\_)(create.*?sequence)", "to" : "-- FIXME databricks.migration.unsupported.feature sequence\n_DONE_$1"},
-		//{"from" : "(?<!\_DONE\_)(LATERAL\s+FLATTEN)", "to" : "-- FIXME databricks.migration.unsupported.function LATERAL_FLATTEN\n_DONE_$1"},
+		{"from" : "(?<!\_DONE\_)(LATERAL\s+FLATTEN)", "to" : "-- FIXME databricks.migration.unsupported.function LATERAL_FLATTEN\n_DONE_$1"},
 		{"from" : "(\<python\>\s*\<tab\_count\:\d+\>\s*)if(.*?)\s*\{", "to" : "$1if$2:"},
 		//{"from" : "\"" ,"to" : "`"},
 		{"from" : "\$\$" ,"to" : "\"\"\""},
@@ -537,11 +526,8 @@
 		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*)\)", "to" : "$1 ORDER BY 1)"},
 		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*)\)", "to" : "$1 ORDER BY 1)"},
 		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\s*)\)", "to" : "$1 ORDER BY 1)"},
-		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\s*)\)", "to" : "$1 ORDER BY 1)"},
-		{"from" : "(\w*\.*\w+\b)\s*\w*\s*\,\s+(LATERAL\s+FLATTEN\b)", "to" : "$1\n$2"},
-		{"from" : "LATERAL\s+FLATTEN\s*\(\s*INPUT\s*\=\>\s*\w*\.(\w+\b)\s*\,.*?\)", "to" : "LATERAL VIEW OUTER EXPLODE ($1) AS "}
+		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\s*)\)", "to" : "$1 ORDER BY 1)"}
 		
-
 		
 	],
 
@@ -705,15 +691,14 @@
 	{"from" : "TO_CHAR","arg_pattern" : {"2" : "'yy\-MM\-dd'"},"output_template" :"DATE_FORMAT($1,$2)"},
 	{"from" : "TO_CHAR","arg_pattern" : {"2" : "'MM\–dd\–yy'"},"output_template" :"DATE_FORMAT($1,$2)"},
 	{"from" : "TO_CHAR","num_args" : "1" ,"output_template" :"CAST($1 as STRING)"},
-	{"from" : "TRY_TO_NUMBER","output_template" :"TRY_CAST($1 as AS DECIMAL(38, 0))"},
-	{"from" : "ARRAY_TO_STRING","to" :"ARRAY_JOIN"},
-	{"from" : "ARRAY_SLICE","to" :"SLICE"},
+
+	
 	{"from" : "ARRAY_AGG","to" :"COLLECT_LIST"},
 	{"from" : "TO_TIME","to" :"TO_TIMESTAMP"},
 	{"from" : "TO_BOOLEAN","to" :"BOOLEAN"},
     {"from" : "TIMEADD","to" :"DATEADD"},
 	{"from" : "TIMESTAMPADD","to" :"DATEADD"},
-	//{"from" : "DATE","to" :"TO_DATE"},
+	{"from" : "DATE","to" :"TO_DATE"},
 	{"from" : "to_timestamp_tz","to" :"to_timestamp"},
 	{"from" : "to_timestamp_ntz","to" :"to_timestamp"},
 	{"from" : "to_timestamp_ltz","to" :"to_timestamp"},

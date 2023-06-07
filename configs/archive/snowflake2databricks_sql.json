@@ -1,34 +1,39 @@
 {
 	"target_sql" : "py",
 	//"inherit_from":["general_sql_specs.json"],
-	"CUSTOM_CONVERTER_MODULES" : ["/home/bladebridge/vijaypavann/new_configs/Converter/databricks_output_hooks_V2.dwsmod", "/home/bladebridge/vijaypavann/new_configs/Converter/snowflake_source_hooks.dwsmod"],
-	//"CUSTOM_CONVERTER_MODULES" : ["C:/Projects/Snowflake2Databricks/DBT/databricks_output_hooks_V2_DBT.pl", "C:/work/Projects/DWS/BBPerl/backend-perl-shared/Config/Converter/snowflake_source_hooks.pl"],
+	"CUSTOM_CONVERTER_MODULES" : ["!BB_CONFIG_CONVERTER!/Configs/databricks_output_hooks_v2.dwsmod", "!BB_CONFIG_CONVERTER!/Configs/snowflake_source_hooks.dwsmod"],
+	//"CUSTOM_CONVERTER_MODULES" : ["C:/projects/Snowflake2Databricks/Config/databricks_output_hooks_v2.pl", "C:/projects/Snowflake2Databricks/Config/snowflake_source_hooks.pl"],
 	"COMBINED_CUSTOM_MODULES_LOAD" : 1, //loads all files at the same time to ensure vars can be shared
 	"initialize_hooks_call" : "::init_databricks_hooks", //initialize context, pass all relevant info
 	"source_prescan_routine" : "::snowflake_prescan",
 	"preprocess_file" : "1",
 	"preprocess_routine" : "::preprocess_for_databricks",
-	"is_dbt":"1",  // Convert to DBT Use 1 Else 0
-	"remove_alias":"1", // Remove Alias When table not found Use 1 Else 0
-	"inceremental_header":"{{\nconfig(\n          materialized=\"incremental\",\n          pre_hook=[\"{{ create_functions() }}\", \"{{ provide_grants() }}\"],\n          alias= \"%_TARGET_%\",\n          on_schema_change = \"append_new_columns\",\n          incremental_strategy=\"replace_where\",\n          incremental_predicates= [%_PREDICATE_TYPE_%]\n      )\n}}\n",
+	"invoked_python_template_file" : "!BB_CONFIG_CONVERTER!/Configs/Python/python_template_for_databricks.py",
+	"invoked_python_function_template_file" : "!BB_CONFIG_CONVERTER!/Configs/Python/python_function_template_for_databricks.py",
+	"tab_count_for_curly_bracket" : 1,
+	//"invoked_sql_template_file"   : "C:/projects/Oracle2Databricks/configs/templates/sql_template.sql",
+
+	
 
 	"line_suppression_behavior":"ELIMINATE", //choices: COMMENT or ELIMINATE
 	"code_fragment_breakers": {
 		"line_end": ["\;\s*"]
 	},
 	
+	"prefix_tag" : "<python>",
+	"generate_widget_to_variable_assignments" : 1,
 	"suppress_lines_containing": ["ALTER\s+SESSION"],
 	"line_suppression_behavior": "ELIMINATE", //choices: COMMENT or ELIMINATE
-	//"change_procedure_to_function" : true,
+	"change_procedure_to_function" : true,
 	"stmt_categorization_patterns": [
     {"category": "TABLE_DDL", "patterns" : [".*?CREATE\s+TABLE",".*?CREATE\s+SET.*\s+TABLE",".*?CREATE\s+MULTISET.*\s+TABLE",".*?CREATE\s+VOLATILE.*\s+TABLE",".*?CREATE\s+TEMP.*\s+TABLE",".*?CREATE\s+GLOBAL\s+TEMPORARY",".*?CREATE\s+PRIVATE\s+TEMPORARY",".*?CREATE\s+LOCAL\s+TEMPORARY"]},
-	//{"category": "CREATE_PROCEDURE", "patterns" : [".*CREATE PROCEDURE \((.*?)\).*;", ".*CREATE\s*OR\s*REPLACE\s*PROCEDURE", ".*CREATE\s*PROCEDURE", ".*REPLACE\s*PROCEDURE"]},
+	{"category": "CREATE_PROCEDURE", "patterns" : [".*CREATE PROCEDURE \((.*?)\).*;", ".*CREATE\s*OR\s*REPLACE\s*PROCEDURE", ".*CREATE\s*PROCEDURE", ".*REPLACE\s*PROCEDURE"]},
 	//{"category": "CREATE_FUNCTION", "patterns" : [".*?\bCREATE\s+OR\s+REPLACE\s+FUNCTION\b", ".*?\bCREATE\s+FUNCTION\b","FUNCTION\s+(\"?\w+\"?\.?\"?\w*\"?)"]},
-    {"category": "COPY_INTO_FILE", "patterns" : ["COPY\s+INTO\s+\w+","COPY\s+INTO\s+\'"]}, 
+
 	//{"category": "SWITCH", "patterns" : ["switch\s*\(.*?\)\s*\{.*?\}"]},
 	{"category": "VALUE_COLUMNS", "patterns" : [".*select.*?from\s+values"]},
 	{"category": "INSERT_ALL", "patterns" : [".*INSERT\s+ALL"]},
-	//{"category": "BIND_VAR", "patterns" : [".*sqlText\:(.*?)BINDS\:\s*(\[.*?\])"]},	  
+	{"category": "BIND_VAR", "patterns" : [".*sqlText\:(.*?)BINDS\:\s*(\[.*?\])"]},	  
 	{"category": "INSERT_FIRST", "patterns" : [".*INSERT\s+FIRST"]},
     {"category": "UPDATE_FROM", "patterns" : [".*UPDATE\s+(\w*\.*\w*\.*\w+\s+\w*\s*)\bSET(\b.*?)\bFROM\s+"]},
 	{"category": "DELETE_FROM", "patterns" : [".*?delete\s+from\s+(\w*\.*\w+)\s+(\w+)\s+(\w+)\s+where(.*?)"]}	
@@ -37,7 +42,6 @@
 
 	"fragment_handling" : {
 	//"SWITCH" : "::switch",	
-    "COPY_INTO_FILE" : "::copy_into_files",
 	"VALUE_COLUMNS" : "::value_columns",
 	"CREATE_PROCEDURE" : "::databricks_proc_arg_defs",
 	"CREATE_FUNCTION" : "::databricks_function_arg_defs",
@@ -61,11 +65,11 @@
 		{"from" : "math\.abs", "to" : "abs"},
 		{"from" : "(?<!\_DONE\_)(\bENABLE|\bDISABLE\b|\bVALIDATE\b|\bNOVALIDATE\b|\bRELY\b)", "to" : "_DONE_$1 -- FIX ME databricks.migration.unsupported.feature"},
 		{"from" : "\bNUMBER\b(?!\s*\()", "to" : "NUMERIC","statement_categories" : ["TABLE_DDL"]},
-		{"from" : "AS\s+\bNUMBER\b(?!\s*\()", "to" : "AS NUMERIC "},
-		{"from" : "\:\:NUMBER\b\s*(?!\()", "to" : "::NUMERIC "},
+		{"from" : "AS\s+\bNUMBER\b(?!\s*\()", "to" : "AS NUMERIC"},
+		{"from" : "\:\:NUMBER\b\s*(?!\()", "to" : "\:\:NUMERIC"},
 		{"from" : "\bNUMBER\b\s*\(", "to" : "NUMERIC("},
-		{"from" : "AS\s+\bNUMBER\b", "to" : "AS NUMERIC "},
-		{"from" : "\:\:NUMBER\b(?!\s*\()", "to" : "::NUMERIC "},
+		{"from" : "AS\s+\bNUMBER\b", "to" : "AS NUMERIC"},
+		{"from" : "\:\:NUMBER\b(?!\s*\()", "to" : "::NUMERIC"},
 	    {"from" : "\bNUMBER\b\s*\(", "to" : "NUMERIC("},
 		{"from" : "\bNUMBER\b", "to" : "NUMERIC","statement_categories" : ["TABLE_DDL"]},
 		{"from" : "\bNUMBER\b\s*\(", "to" : "NUMERIC("},
@@ -420,18 +424,9 @@
 		{"from" : "partition by (\w+\s*)\)", "to" : "PARTITION BY $1 ORDER BY 1 )"},
 		{"from" : "partition by (\w+\s*\,\s*\w+\s*)\)", "to" : "PARTITION BY $1 ORDER BY 1 )"},
 		{"from" : "partition by (\w+\s*\,\s*\w+\s*\,\s*\w+\s*)\)", "to" : "PARTITION BY $1 ORDER BY 1 )"},
-		{"from" : "partition by (\w+\s*\,\s*\w+\s*\,\s*\w+\s*\,\s*\w+\s*)\)", "to" : "PARTITION BY $1 ORDER BY 1 )"},
-		{"from" : "(\w+\.)value\:", "to" : "$1"},
-		{"from" : "(\w*\.*\w+\b)\:\:NUMERIC", "to" : "CAST($1 AS DECIMAL(38,0))"},
-		{"from" : "(\w*\.*\w+\b)\:\:FLOAT", "to" : "CAST($1 AS DOUBLE)"},
-		{"from" : "(\w*\.*\w+\b)\:\:STRING", "to" : "CAST($1 AS STRING)"},
-		{"from" : "(\w*\.*\w+\b)\:\:date", "to" : "CAST($1 AS DATE)"},
-		{"from" : "timestamp_ntz\s*\(\s*\d+\s*\)", "to" : "TIMESTAMP"},
-		{"from" : "\bDATE\s*\(", "to" : "TO_DATE("},
-		{"from" : "BEGIN\s+TRANSACTION\b\s*\;", "to" : ""},
-        {"from" : "\bCOMMIT\b\;", "to" : ""}
-		
-		//change back from NOT_NULL to NOT NULL
+		{"from" : "partition by (\w+\s*\,\s*\w+\s*\,\s*\w+\s*\,\s*\w+\s*)\)", "to" : "PARTITION BY $1 ORDER BY 1 )"}
+
+        		//change back from NOT_NULL to NOT NULL
 
 
 	],
@@ -457,13 +452,26 @@
   	    {"from" : "CREATE\s+LOCAL\s+TEMPORARY\s+TABLE" ,"to" :"CREATE OR REPLACE TABLE/* FIX ME databricks.migration.unsupported.feature TEMPORARY TABLE ADD DROP TABLE AT APPROPRIATE PLACE MAUALLY */","statement_categories" : ["TABLE_DDL"],"first_match":1},
 		
 		//{"from" : "\<python\>", "to" : ""},
-
+		{"from" : "\<python\>\<tab\_count\:0\>\s*", "to" : ""},
+		{"from" : "\<python\>\<tab\_count\:1\>\s*", "to" : "\t"},
+		{"from" : "\<python\>\<tab\_count\:2\>\s*", "to" : "\t\t"},
+		{"from" : "\<python\>\<tab\_count\:3\>\s*", "to" : "\t\t\t"},
+		{"from" : "\<python\>\<tab\_count\:4\>\s*", "to" : "\t\t\t\t"},
+		{"from" : "\<python\>\<tab\_count\:5\>\s*", "to" : "\t\t\t\t\t"},
+		{"from" : "\<tab\_count\:0\>\s*", "to" : ""},
+		{"from" : "\<tab\_count\:1\>\s*", "to" : "\t"},
+		{"from" : "\<tab\_count\:2\>\s*", "to" : "\t\t"},
+		{"from" : "\<tab\_count\:3\>\s*", "to" : "\t\t\t"},
+		{"from" : "\<tab\_count\:4\>\s*", "to" : "\t\t\t\t"},
+		{"from" : "\<tab\_count\:5\>\s*", "to" : "\t\t\t\t\t"},
 		{"from" : "(\w+\.)\$(\d+)", "to" : "$1_DOLLAR_$2-- FIXME. databricks.migrations.unsupported  Column reference by position"},
 		{"from" : "var\s+dummy \=\'dummy\'\;", "to" : "\t\t\t\t\t"},
-
+		{"from" : "(returns\s+\w+.*)\bas\b(.*?)\;" ,"to" : "$1return$2"},
+		{"from" : "(returns\s+\w+\s+)as(\s*\'.*?\')" ,"to" : "$1return$2"},
+		{"from" : "(returns\s+\w+\s+\s*\(.*?\)\s*)as" ,"to" : "$1return"},
 		{"from" : "comment\s*\=" ,"to" : "comment"},
 		{"from" : "(?<!\_DONE\_)(select.*?match_recognize)" ,"to" : "-- FIXME. databricks.migrations.unsupported  match_recognize clause\n_DONE_$1"},
-		//{"from" : "(?<!\_DONE\_)(select.*?=>)" ,"to" : "-- FIXME. databricks.migrations.unsupported  Named  paramaters in function call\n_DONE_$1"},
+		{"from" : "(?<!\_DONE\_)(select.*?=>)" ,"to" : "-- FIXME. databricks.migrations.unsupported  Named  paramaters in function call\n_DONE_$1"},
       	{"from" : "(?<!\_DONE\_)(pivot.*for)(.*?)(as\s+\w+)" ,"to" : "_DONE_$1 $3 $2"},
 	    {"from" : "(?<!\_DONE\_)(with\s+recursive)" ,"to" : "-- FIXME. databricks.migrations.unsupported  Recurive CTE\n_DONE_$1"},
 		{"from" : "(?<!\_DONE\_)(select.*?start\s+with.*?connect\b)" ,"to" : "-- FIXME. databricks.migrations.unsupported  Hierarchical Query\n_DONE_$1"},
@@ -476,7 +484,6 @@
 		{"from" : "(?<!\_DONE\_)(select.*?nextval)", "to" : "-- FIXME databricks.migration.unsupported.feature sequence\n_DONE_$1"},
 		{"from" : "(?<!\_DONE\_)(select.*?curval)", "to" : "-- FIXME databricks.migration.unsupported.feature sequence\n_DONE_$1"},
 		{"from" : "(?<!\_DONE\_)(create.*?sequence)", "to" : "-- FIXME databricks.migration.unsupported.feature sequence\n_DONE_$1"},
-		//{"from" : "(?<!\_DONE\_)(LATERAL\s+FLATTEN)", "to" : "-- FIXME databricks.migration.unsupported.function LATERAL_FLATTEN\n_DONE_$1"},
 		{"from" : "(\<python\>\s*\<tab\_count\:\d+\>\s*)if(.*?)\s*\{", "to" : "$1if$2:"},
 		//{"from" : "\"" ,"to" : "`"},
 		{"from" : "\$\$" ,"to" : "\"\"\""},
@@ -484,7 +491,7 @@
 		{"from" : "(?<!\_DONE\_)(from\s+\w+\s+tablesample)\s*\((.*?)\)", "to" : "_DONE_$1($2 percent)"},
 		{"from" : "(from\s+\w+)\s+\bsample\s*\((.*?)\)", "to" : "$1 tablesample($2 percent)"},
 		{"from" : "_DOLLAR_" ,"to" : "$"},
-	
+		{"from" : "\bwhile\b(.*?)\s*\{", "to" : "while$1:"},
 		
 		{"from" : "\n\n", "to" : "\n"},
 		{"from" : "\btry\s*\{", "to" : "try:"},
@@ -492,8 +499,29 @@
 		{"from" : "(\w+)\.message", "to" : "$1"},
 		{"from" : "\=\s*\`", "to" : "= f\"\"\""},
 		{"from" : "(?<!\.)\`", "to" : "\"\"\""},
-	
-		{"from" : "\}\s*(\$\$|\`|\"\"\")\s*\;", "to" : ""},
+		{"from" : "\bvar\s+(\w+\s*\=)(\s*\n\s*[\"|\'])", "to" : "$1\$2"},
+	    {"from" : "\bvar\s+(\w+\s*=)", "to" : "$1"},
+		{"from" : "\bvar\s+(\w+\s*\;)", "to" : "$1"},
+		{"from" : "return\s+(\".*?)\;", "to" : "dbutils.notebook.exit($1)"},
+		{"from" : "return\s+(\w+)\s*\;", "to" : "dbutils.notebook.exit($1)"},
+//		{"from" : "\;(?!\')", "to" : ""},
+		//{"from" : "snowflake\.createStatement\s*\(\s*\{\s*sqlText\s*\:\s*(\"\"\".*?\"\"\",\s*binds.*?)\}\)\;", "to" : "$1"},
+		{"from" : "snowflake\.createStatement\s*\(\s*\{\s*sqlText\s*\:\s*(\"\"\".*?\"\"\")\s*\}\s*\)\s*\;", "to" : "f$1;"},
+		{"from" : "snowflake\.createStatement\s*\(\s*\{\s*sqlText\s*\:\s*(\".*?\")\s*\}\s*\)\s*\;", "to" : "f$1;"},
+		{"from" : "snowflake\.createStatement\s*\(\s*\{\s*sqlText\s*\:\s*(\".*?\")\s*\}\s*\)\s*\)\s*", "to" : "f$1;"},
+		{"from" : "snowflake\.createStatement\s*\(\s*\{\s*sqlText\s*\:\s*\"\"\"(.*?)\"\"\"\s*\}\s*\)\s*\;", "to" : "f\"\"\"$1\"\"\";"},
+		{"from" : "snowflake\.createStatement\s*\(\s*\{\s*sqlText\s*\:\s*(\w+)\s*\}\s*\)\s*\;", "to" : "$1;"},
+		{"from" : "snowflake\.createStatement\s*\(\s*(\w+)\s*\)\s*\;", "to" : "$1"},
+		{"from" : "snowflake\.createStatement\s*\(\s*\{\s*sqlText\s*\:\s*\"\"\"(.*?)\"\"\"\s*\}\s*\)\;", "to" : "f$1;"},
+		{"from" : "snowflake\.createStatement\s*\(\s*\{\s*sqlText\s*\:\s*(\w+)\s*\}\s*\)\.execute\s*\(\s*\)\s*\;", "to" : "spark.sql(f$1);"},
+		{"from" : "snowflake\.createStatement\s*\(\s*\{\s*sqlText\s*\:\s*(\".*?\")\s*\}\s*\)\.execute\s*\(\s*\)\s*\;", "to" : "spark.sql(f$1);"},
+		{"from" : "snowflake\.createStatement\s*\(\s*\{\s*sqlText\s*\:\s*\"\"\"(.*?)\"\"\"\s*\}\s*\)\.execute\s*\(\s*\)\s*\;", "to" : "spark.sql(f\"\"\"$1\"\"\");"},
+		{"from" : "(\w+)\.execute\s*\(\)", "to" : "spark.sql($1)"},
+		{"from" : "\w+\.execute\s*\(\s*\{\s*sqlText\:\s*(\w+)\s*\}\s*\)\s*", "to" : "spark.sql($1)"},
+		{"from" : "snowflake\.execute\s*\(\s*\{\s*sqlText\:\s*(\"\"\".*?\"\"\")\s*\}\s*\)\s*", "to" : "spark.sql($1)"},
+		{"from" : "\{\s*sqlText\s*\:\s*(\w+)\s*\}", "to" : "$1"},
+		
+		{"from" : "\}\s*(\'|\$\$|\`|\"\"\")\s*\;", "to" : ""},
 		{"from" : "\$\$\;", "to" : ""},
 		{"from" : "\$\$", "to" : ""},
 		{"from" : "\/\/", "to" : "#"},
@@ -504,6 +532,8 @@
 		{"from" : "\"\s+\+\s*(\b\w+\b)\s*(?![\(|\-])", "to" : "\"+str($1)"},
 		
 		{"from" : "FROM\s+DUAL", "to" : ""},
+		{"from" : "while\s*\((\w+)\.next\s*\(\s*\)\s*\)", "to" : "for $1_index, $1_row in enumerate($1__CURSOR_SUFIX__"},
+		{"from" : "(\w+)\.getColumnValue\(\s*(\d+)\s*\)", "to" : "$1_row[$2_SUB_ONE]"},
 		//{"from" : "(?<!\')\'\'(?!\')", "to" : "'"},
 		
        // {"from" : "(\<tab_count:\d+\>)\s*\<tab_count:\d+\>", "to" : "$1"}, 
@@ -531,20 +561,45 @@
 		{"from" : "(\w+)\.toString\s*\(\)", "to" : "str($1)"},
 		{"from" : "\{\s*\;", "to" : ""},
 		{"from" : "_BAC_TICK_", "to" : "`"},	
+		{"from" : "\belsif\b", "to" : "elif"},
+		{"from" : "\blet\b\s*", "to" : ""},
+		{"from" : "(\w+)\.next\(\)", "to" : "$1.first()[0]"},
+		{"from" : "\bthrow\s*(\"\"\".*?\"\"\")", "to" : "raise Exception($1)"},
+		{"from" : "\bthrow\s*(\w+)", "to" : "raise Exception(str($1))"},
+		{"from" : "JSON\.parse\s*\((\w+)\.getColumnValue\s*\(\s*(\"\"\"\w+\"\"\")\s*\)\s*\)", "to" : "json.loads($1.first()[$2]))"},
 		{"from" : "(partition\s+by\s+\w*\.*\w+\s*)\)", "to" : "$1 ORDER BY 1)"},
+		
 		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*)\)", "to" : "$1 ORDER BY 1)"},
 		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*)\)", "to" : "$1 ORDER BY 1)"},
 		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*)\)", "to" : "$1 ORDER BY 1)"},
 		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*)\)", "to" : "$1 ORDER BY 1)"},
 		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\s*)\)", "to" : "$1 ORDER BY 1)"},
-		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\s*)\)", "to" : "$1 ORDER BY 1)"},
-		{"from" : "(\w*\.*\w+\b)\s*\w*\s*\,\s+(LATERAL\s+FLATTEN\b)", "to" : "$1\n$2"},
-		{"from" : "LATERAL\s+FLATTEN\s*\(\s*INPUT\s*\=\>\s*\w*\.(\w+\b)\s*\,.*?\)", "to" : "LATERAL VIEW OUTER EXPLODE ($1) AS "}
+		{"from" : "(partition\s+by\s+\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\,\s*\w*\.*\w+\s*\s*)\)", "to" : "$1 ORDER BY 1)"}
 		
-
 		
 	],
 
+	//"fragment_handling" : {
+	//	"COMMENT" : "::convert_comment",
+	//	"PROC_START" : "::process_PROC_START",
+	//	"WRITE_DML" : "::convert_dml",
+	//	"TRUNCATE_TABLE" : "::convert_dml",
+	//	"EXECUTE_SQL" : "::convert_dml",
+	//	"TABLE_VAR_DECLARE" : "::convert_table_var_declare",
+	//	"VAR_DECLARE" : "::blank", // this does not add any wrapping around the SQL
+	//	"VAR_ASSIGNMENT" : "::convert_var_assignment",
+	//	"READ_DML" : "::read_dml",
+	//	"READ_WITH" : "::convert_with",
+	//	"LEFTOVER_COMMENT_CLOSURE" : "::remove_leftover_comment_closure",
+	//	"NOCOUNT" : "::blank",
+	//	"SEMICOLON" : "::blank",
+	//	"IF_START" : "::convert_start_if",
+	//	"IF_END" : "::convert_end_if",
+	//	"BEGIN_KW" : "::blank",
+	//	"PROC_FINISH" : "::blank",
+	//	"DROP_TEMP_TABLE" : "::blank"
+	//	//,"MULTY_DECLARE" : "::remove_multy_declare"
+	//},
 
 	"function_subst" : [
 	{"from" : "DATE_PART","arg_pattern" : {"1" : "year"},"output_template" :"DATE_PART2('$1',$2)"}	,
@@ -705,15 +760,14 @@
 	{"from" : "TO_CHAR","arg_pattern" : {"2" : "'yy\-MM\-dd'"},"output_template" :"DATE_FORMAT($1,$2)"},
 	{"from" : "TO_CHAR","arg_pattern" : {"2" : "'MM\–dd\–yy'"},"output_template" :"DATE_FORMAT($1,$2)"},
 	{"from" : "TO_CHAR","num_args" : "1" ,"output_template" :"CAST($1 as STRING)"},
-	{"from" : "TRY_TO_NUMBER","output_template" :"TRY_CAST($1 as AS DECIMAL(38, 0))"},
-	{"from" : "ARRAY_TO_STRING","to" :"ARRAY_JOIN"},
-	{"from" : "ARRAY_SLICE","to" :"SLICE"},
+
+	
 	{"from" : "ARRAY_AGG","to" :"COLLECT_LIST"},
 	{"from" : "TO_TIME","to" :"TO_TIMESTAMP"},
 	{"from" : "TO_BOOLEAN","to" :"BOOLEAN"},
     {"from" : "TIMEADD","to" :"DATEADD"},
 	{"from" : "TIMESTAMPADD","to" :"DATEADD"},
-	//{"from" : "DATE","to" :"TO_DATE"},
+	{"from" : "DATE","to" :"TO_DATE"},
 	{"from" : "to_timestamp_tz","to" :"to_timestamp"},
 	{"from" : "to_timestamp_ntz","to" :"to_timestamp"},
 	{"from" : "to_timestamp_ltz","to" :"to_timestamp"},
@@ -730,15 +784,14 @@
 	{"from" : "lnth","to" :"len"}
 	] ,
 	"to_string_types" : ["CHAR","TEXT","TIME","BOOLEAN","DATE","INERTVAL"],
-	//"prefix_tag" : "<python>",
-	//"is_script" :true,
+	"prefix_tag" : "<python>",
+	"is_script" :true,
 	//"cursor_sufix":".rdd.collect()",
-	//"cursor_sufix":".take(1000)):\n# FIXME databricks.migration.task  Review and Update default max records limit (1000)\n# s_e_t to above df.take() api call to avoid collecting large number of records to driver#",
-	//"tab_tag" : "<tab_count:%count%>",
+	"cursor_sufix":".take(1000)):\n# FIXME databricks.migration.task  Review and Update default max records limit (1000)\n# s_e_t to above df.take() api call to avoid collecting large number of records to driver#",
+	"tab_tag" : "<tab_count:%count%>",
 	//egin_tag" : "<begin_level:%level%>",
-	//"set_global_python_keys" :["\bexception\b","\bfunction\b","declare","BEGIN"],
-	//"python_keys_regex" :["for","v_step","try","catch","DECLARE","EXECUTE","CURSOR\s+\w+\s+IS.*?","IF.*?then","FOR\s+\w+\s+IN\s+\w+\s+LOOP","CURSOR\s+\w+\s+IS.*?\;","python",".*?\bWHILE\b.*?LOOP","RAISE_APPLICATION_ERROR","procedure","execute"],
+	"set_global_python_keys" :["\bexception\b","\bfunction\b","declare","BEGIN"],
+	"python_keys_regex" :["for","v_step","try","catch","DECLARE","EXECUTE","CURSOR\s+\w+\s+IS.*?","IF.*?then","FOR\s+\w+\s+IN\s+\w+\s+LOOP","CURSOR\s+\w+\s+IS.*?\;","python",".*?\bWHILE\b.*?LOOP","RAISE_APPLICATION_ERROR","procedure","execute"],
 	"pre_finalization_handler" : "::finalize_content",
-	"src_type":"SNOWFLAKE",
-	"insert_overwrite":"1"
+	"src_type":"SNOWFLAKE"
 }
