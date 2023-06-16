@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Informatica proprietary -->
+<!DOCTYPE POWERMART SYSTEM "powrmart.dtd">
+<POWERMART CREATION_DATE="05/19/2023 10:49:46" REPOSITORY_VERSION="189.98">
+<REPOSITORY NAME="REPO_PROD_1052" VERSION="189" CODEPAGE="Latin1" DATABASETYPE="Oracle" PARENTREPOSITORY="GLOBAL_REPO_PROD_1052">
+<FOLDER NAME="Odyssey_Reservations" GROUP="" OWNER="Administrator" SHARED="NOTSHARED" DESCRIPTION="Folder that contains all the mappings related to the reservation load." PERMISSIONS="rwx---r--" UUID="7c806769-fb24-42e7-8dee-f8bb95caf17f">
+    <MAPPING DESCRIPTION ="Mapping that loads the currency exchange rates from the Odyssey system." ISVALID ="YES" NAME ="m_ODY_INT_CURR_EXCH" OBJECTVERSION ="1" VERSIONNUMBER ="2">
+        <TRANSFORMATION DESCRIPTION ="" NAME ="SQ_Shortcut_To_EXCH_RTS" OBJECTVERSION ="1" REUSABLE ="NO" TYPE ="Source Qualifier" VERSIONNUMBER ="2">
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="EXR_TYP_CD" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="10" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="CUR_CURR_CD_FROM" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="3" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="CUR_CURR_CD_TO" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="3" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="EFF_DT" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="29" SCALE ="9"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="CREAT_BY" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="30" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="CREAT_DT" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="29" SCALE ="9"/>
+            <TRANSFORMFIELD DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="END_DT" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="29" SCALE ="9"/>
+            <TRANSFORMFIELD DATATYPE ="decimal" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="RT" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="12" SCALE ="7"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="LST_UPD_BY" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="30" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="LST_UPD_DT" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="29" SCALE ="9"/>
+            <TABLEATTRIBUTE NAME ="Sql Query" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="User Defined Join" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Source Filter" VALUE ="EXCH_RTS.CUR_CURR_CD_TO = &apos;USD&apos; AND EXCH_RTS.EXR_TYP_CD = &apos;INVOICING&apos; AND EXCH_RTS.EFF_DT &gt;= TRUNC($$ODY_SYSDATE_GE) - 2"/>
+            <TABLEATTRIBUTE NAME ="Number Of Sorted Ports" VALUE ="0"/>
+            <TABLEATTRIBUTE NAME ="Tracing Level" VALUE ="Normal"/>
+            <TABLEATTRIBUTE NAME ="Select Distinct" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Is Partitionable" VALUE ="YES"/>
+            <TABLEATTRIBUTE NAME ="Pre SQL" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Post SQL" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Output is deterministic" VALUE ="YES"/>
+            <TABLEATTRIBUTE NAME ="Output is repeatable" VALUE ="Always"/>
+        </TRANSFORMATION>
+        <TRANSFORMATION DESCRIPTION ="" NAME ="LKP_INT_CURRENCY" OBJECTVERSION ="1" REUSABLE ="NO" TYPE ="Lookup Procedure" VERSIONNUMBER ="1">
+            <TRANSFORMFIELD DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="IN_EXCH_DT" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="29" SCALE ="9"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="IN_CD_FROM" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="3" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="IN_CD_TO" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="3" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="Effective date of exchange rate." NAME ="EXCH_DT" PICTURETEXT ="" PORTTYPE ="LOOKUP/OUTPUT" PRECISION ="29" SCALE ="9"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="Currency code of the &quot;From&quot; country." NAME ="CUR_COUNTRY_CD_FROM" PICTURETEXT ="" PORTTYPE ="LOOKUP/OUTPUT" PRECISION ="3" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="Currency code of the &quot;To&quot; country." NAME ="CUR_COUNTRY_CD_TO" PICTURETEXT ="" PORTTYPE ="LOOKUP/OUTPUT" PRECISION ="3" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="decimal" DEFAULTVALUE ="" DESCRIPTION ="Exchange Rate used in the res/ rent transaction." NAME ="RATE" PICTURETEXT ="" PORTTYPE ="LOOKUP/RETURN/OUTPUT" PRECISION ="12" SCALE ="7"/>
+            <TABLEATTRIBUTE NAME ="Lookup Sql Override" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Lookup table name" VALUE ="INT_CURR_EXCH"/>
+            <TABLEATTRIBUTE NAME ="Lookup Source Filter" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Lookup caching enabled" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Lookup policy on multiple match" VALUE ="Use First Value"/>
+            <TABLEATTRIBUTE NAME ="Lookup condition" VALUE ="EXCH_DT = IN_EXCH_DT AND CUR_COUNTRY_CD_FROM = IN_CD_FROM AND CUR_COUNTRY_CD_TO = IN_CD_TO"/>
+            <TABLEATTRIBUTE NAME ="Connection Information" VALUE ="$Target"/>
+            <TABLEATTRIBUTE NAME ="Source Type" VALUE ="Database"/>
+            <TABLEATTRIBUTE NAME ="Recache if Stale" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Tracing Level" VALUE ="Normal"/>
+            <TABLEATTRIBUTE NAME ="Lookup cache directory name" VALUE ="$PMCacheDir"/>
+            <TABLEATTRIBUTE NAME ="Lookup cache initialize" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Lookup cache persistent" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Lookup Data Cache Size" VALUE ="Auto"/>
+            <TABLEATTRIBUTE NAME ="Lookup Index Cache Size" VALUE ="Auto"/>
+            <TABLEATTRIBUTE NAME ="Dynamic Lookup Cache" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Synchronize Dynamic Cache" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Output Old Value On Update" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Update Dynamic Cache Condition" VALUE ="TRUE"/>
+            <TABLEATTRIBUTE NAME ="Cache File Name Prefix" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Re-cache from lookup source" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Insert Else Update" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Update Else Insert" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Datetime Format" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Thousand Separator" VALUE ="None"/>
+            <TABLEATTRIBUTE NAME ="Decimal Separator" VALUE ="."/>
+            <TABLEATTRIBUTE NAME ="Case Sensitive String Comparison" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Null ordering" VALUE ="Null Is Highest Value"/>
+            <TABLEATTRIBUTE NAME ="Sorted Input" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Lookup source is static" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Pre-build lookup cache" VALUE ="Auto"/>
+            <TABLEATTRIBUTE NAME ="Subsecond Precision" VALUE ="0"/>
+        </TRANSFORMATION>
+        <TRANSFORMATION DESCRIPTION ="" NAME ="UPDTRANS" OBJECTVERSION ="1" REUSABLE ="NO" TYPE ="Update Strategy" VERSIONNUMBER ="1">
+            <TRANSFORMFIELD DATATYPE ="decimal" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="LKP_RATE" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="12" SCALE ="7"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="CUR_CURR_CD_FROM2" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="3" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="CUR_CURR_CD_TO2" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="3" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="EFF_DT2" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="29" SCALE ="9"/>
+            <TRANSFORMFIELD DATATYPE ="decimal" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="RT2" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="12" SCALE ="7"/>
+            <TRANSFORMFIELD DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="LOAD_TS2" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="29" SCALE ="9"/>
+            <TRANSFORMFIELD DATATYPE ="small integer" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="SYSTEM_ID" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="5" SCALE ="0"/>
+            <TABLEATTRIBUTE NAME ="Update Strategy Expression" VALUE ="IIF(ISNULL(LKP_RATE),DD_INSERT,DD_UPDATE)"/>
+            <TABLEATTRIBUTE NAME ="Forward Rejected Rows" VALUE ="YES"/>
+            <TABLEATTRIBUTE NAME ="Tracing Level" VALUE ="Normal"/>
+        </TRANSFORMATION>
+        <TRANSFORMATION DESCRIPTION ="" NAME ="EXP_Get_Data" OBJECTVERSION ="1" REUSABLE ="NO" TYPE ="Expression" VERSIONNUMBER ="1">
+            <TRANSFORMFIELD DATATYPE ="decimal" DEFAULTVALUE ="ERROR(&apos;transformation error&apos;)" DESCRIPTION ="" EXPRESSION =":LKP.LKP_INT_CURRENCY(EFF_DT,CUR_CURR_CD_FROM,CUR_CURR_CD_TO)" EXPRESSIONTYPE ="GENERAL" NAME ="V_RATE_ID" PICTURETEXT ="" PORTTYPE ="OUTPUT" PRECISION ="12" SCALE ="7"/>
+            <TRANSFORMFIELD DATATYPE ="small integer" DEFAULTVALUE ="ERROR(&apos;transformation error&apos;)" DESCRIPTION ="" EXPRESSION ="1" EXPRESSIONTYPE ="GENERAL" NAME ="SYSTEM_ID" PICTURETEXT ="" PORTTYPE ="OUTPUT" PRECISION ="5" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" EXPRESSION ="CUR_CURR_CD_FROM" EXPRESSIONTYPE ="GENERAL" NAME ="CUR_CURR_CD_FROM" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="3" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" EXPRESSION ="CUR_CURR_CD_TO" EXPRESSIONTYPE ="GENERAL" NAME ="CUR_CURR_CD_TO" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="3" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="" EXPRESSION ="EFF_DT" EXPRESSIONTYPE ="GENERAL" NAME ="EFF_DT" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="29" SCALE ="9"/>
+            <TRANSFORMFIELD DATATYPE ="decimal" DEFAULTVALUE ="" DESCRIPTION ="" EXPRESSION ="RT" EXPRESSIONTYPE ="GENERAL" NAME ="RT" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="12" SCALE ="7"/>
+            <TRANSFORMFIELD DATATYPE ="date/time" DEFAULTVALUE ="ERROR(&apos;transformation error&apos;)" DESCRIPTION ="" EXPRESSION ="SESSSTARTTIME" EXPRESSIONTYPE ="GENERAL" NAME ="LOAD_TS" PICTURETEXT ="" PORTTYPE ="OUTPUT" PRECISION ="29" SCALE ="9"/>
+            <TABLEATTRIBUTE NAME ="Tracing Level" VALUE ="Normal"/>
+        </TRANSFORMATION>
+        <INSTANCE DESCRIPTION ="" NAME ="Shortcut_To_INT_CURR_EXCH" TRANSFORMATION_NAME ="Shortcut_To_INT_CURR_EXCH" TRANSFORMATION_TYPE ="Target Definition" TYPE ="TARGET"/>
+        <INSTANCE DESCRIPTION ="" NAME ="SQ_Shortcut_To_EXCH_RTS" REUSABLE ="NO" TRANSFORMATION_NAME ="SQ_Shortcut_To_EXCH_RTS" TRANSFORMATION_TYPE ="Source Qualifier" TYPE ="TRANSFORMATION">
+            <ASSOCIATED_SOURCE_INSTANCE NAME ="Shortcut_To_EXCH_RTS"/>
+        </INSTANCE>
+        <INSTANCE DESCRIPTION ="Determines if there is a currency already at the database." NAME ="LKP_INT_CURRENCY" REUSABLE ="NO" TRANSFORMATION_NAME ="LKP_INT_CURRENCY" TRANSFORMATION_TYPE ="Lookup Procedure" TYPE ="TRANSFORMATION"/>
+        <INSTANCE DESCRIPTION ="" NAME ="UPDTRANS" REUSABLE ="NO" TRANSFORMATION_NAME ="UPDTRANS" TRANSFORMATION_TYPE ="Update Strategy" TYPE ="TRANSFORMATION"/>
+        <INSTANCE DESCRIPTION ="Prepares source data for routing to the target table." NAME ="EXP_Get_Data" REUSABLE ="NO" TRANSFORMATION_NAME ="EXP_Get_Data" TRANSFORMATION_TYPE ="Expression" TYPE ="TRANSFORMATION"/>
+        <INSTANCE DBDNAME ="Odyssey" DESCRIPTION ="" NAME ="Shortcut_To_EXCH_RTS" TRANSFORMATION_NAME ="Shortcut_To_EXCH_RTS" TRANSFORMATION_TYPE ="Source Definition" TYPE ="SOURCE"/>
+        <INSTANCE DESCRIPTION ="" NAME ="Shortcut_To_PKG_DW_SP_CURRENCY_DAILY" REUSABLE ="YES" TRANSFORMATION_NAME ="Shortcut_To_PKG_DW.SP_CURRENCY_DAILY" TRANSFORMATION_TYPE ="Stored Procedure" TYPE ="TRANSFORMATION"/>
+        <CONNECTOR FROMFIELD ="CUR_CURR_CD_FROM2" FROMINSTANCE ="UPDTRANS" FROMINSTANCETYPE ="Update Strategy" TOFIELD ="CUR_COUNTRY_CD_FROM" TOINSTANCE ="Shortcut_To_INT_CURR_EXCH" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="CUR_CURR_CD_TO2" FROMINSTANCE ="UPDTRANS" FROMINSTANCETYPE ="Update Strategy" TOFIELD ="CUR_COUNTRY_CD_TO" TOINSTANCE ="Shortcut_To_INT_CURR_EXCH" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="EFF_DT2" FROMINSTANCE ="UPDTRANS" FROMINSTANCETYPE ="Update Strategy" TOFIELD ="EXCH_DT" TOINSTANCE ="Shortcut_To_INT_CURR_EXCH" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="RT2" FROMINSTANCE ="UPDTRANS" FROMINSTANCETYPE ="Update Strategy" TOFIELD ="RATE" TOINSTANCE ="Shortcut_To_INT_CURR_EXCH" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="LOAD_TS2" FROMINSTANCE ="UPDTRANS" FROMINSTANCETYPE ="Update Strategy" TOFIELD ="LOAD_TS" TOINSTANCE ="Shortcut_To_INT_CURR_EXCH" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="SYSTEM_ID" FROMINSTANCE ="UPDTRANS" FROMINSTANCETYPE ="Update Strategy" TOFIELD ="SYSTEM_ID" TOINSTANCE ="Shortcut_To_INT_CURR_EXCH" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="EXR_TYP_CD" FROMINSTANCE ="Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Definition" TOFIELD ="EXR_TYP_CD" TOINSTANCE ="SQ_Shortcut_To_EXCH_RTS" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="CUR_CURR_CD_FROM" FROMINSTANCE ="Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Definition" TOFIELD ="CUR_CURR_CD_FROM" TOINSTANCE ="SQ_Shortcut_To_EXCH_RTS" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="CUR_CURR_CD_TO" FROMINSTANCE ="Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Definition" TOFIELD ="CUR_CURR_CD_TO" TOINSTANCE ="SQ_Shortcut_To_EXCH_RTS" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="EFF_DT" FROMINSTANCE ="Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Definition" TOFIELD ="EFF_DT" TOINSTANCE ="SQ_Shortcut_To_EXCH_RTS" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="CREAT_BY" FROMINSTANCE ="Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Definition" TOFIELD ="CREAT_BY" TOINSTANCE ="SQ_Shortcut_To_EXCH_RTS" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="CREAT_DT" FROMINSTANCE ="Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Definition" TOFIELD ="CREAT_DT" TOINSTANCE ="SQ_Shortcut_To_EXCH_RTS" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="END_DT" FROMINSTANCE ="Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Definition" TOFIELD ="END_DT" TOINSTANCE ="SQ_Shortcut_To_EXCH_RTS" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="RT" FROMINSTANCE ="Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Definition" TOFIELD ="RT" TOINSTANCE ="SQ_Shortcut_To_EXCH_RTS" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="LST_UPD_BY" FROMINSTANCE ="Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Definition" TOFIELD ="LST_UPD_BY" TOINSTANCE ="SQ_Shortcut_To_EXCH_RTS" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="LST_UPD_DT" FROMINSTANCE ="Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Definition" TOFIELD ="LST_UPD_DT" TOINSTANCE ="SQ_Shortcut_To_EXCH_RTS" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="EFF_DT" FROMINSTANCE ="SQ_Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="EFF_DT" TOINSTANCE ="EXP_Get_Data" TOINSTANCETYPE ="Expression"/>
+        <CONNECTOR FROMFIELD ="CUR_CURR_CD_TO" FROMINSTANCE ="SQ_Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="CUR_CURR_CD_TO" TOINSTANCE ="EXP_Get_Data" TOINSTANCETYPE ="Expression"/>
+        <CONNECTOR FROMFIELD ="CUR_CURR_CD_FROM" FROMINSTANCE ="SQ_Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="CUR_CURR_CD_FROM" TOINSTANCE ="EXP_Get_Data" TOINSTANCETYPE ="Expression"/>
+        <CONNECTOR FROMFIELD ="RT" FROMINSTANCE ="SQ_Shortcut_To_EXCH_RTS" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="RT" TOINSTANCE ="EXP_Get_Data" TOINSTANCETYPE ="Expression"/>
+        <CONNECTOR FROMFIELD ="RT" FROMINSTANCE ="EXP_Get_Data" FROMINSTANCETYPE ="Expression" TOFIELD ="RT2" TOINSTANCE ="UPDTRANS" TOINSTANCETYPE ="Update Strategy"/>
+        <CONNECTOR FROMFIELD ="LOAD_TS" FROMINSTANCE ="EXP_Get_Data" FROMINSTANCETYPE ="Expression" TOFIELD ="LOAD_TS2" TOINSTANCE ="UPDTRANS" TOINSTANCETYPE ="Update Strategy"/>
+        <CONNECTOR FROMFIELD ="SYSTEM_ID" FROMINSTANCE ="EXP_Get_Data" FROMINSTANCETYPE ="Expression" TOFIELD ="SYSTEM_ID" TOINSTANCE ="UPDTRANS" TOINSTANCETYPE ="Update Strategy"/>
+        <CONNECTOR FROMFIELD ="V_RATE_ID" FROMINSTANCE ="EXP_Get_Data" FROMINSTANCETYPE ="Expression" TOFIELD ="LKP_RATE" TOINSTANCE ="UPDTRANS" TOINSTANCETYPE ="Update Strategy"/>
+        <CONNECTOR FROMFIELD ="CUR_CURR_CD_FROM" FROMINSTANCE ="EXP_Get_Data" FROMINSTANCETYPE ="Expression" TOFIELD ="CUR_CURR_CD_FROM2" TOINSTANCE ="UPDTRANS" TOINSTANCETYPE ="Update Strategy"/>
+        <CONNECTOR FROMFIELD ="CUR_CURR_CD_TO" FROMINSTANCE ="EXP_Get_Data" FROMINSTANCETYPE ="Expression" TOFIELD ="CUR_CURR_CD_TO2" TOINSTANCE ="UPDTRANS" TOINSTANCETYPE ="Update Strategy"/>
+        <CONNECTOR FROMFIELD ="EFF_DT" FROMINSTANCE ="EXP_Get_Data" FROMINSTANCETYPE ="Expression" TOFIELD ="EFF_DT2" TOINSTANCE ="UPDTRANS" TOINSTANCETYPE ="Update Strategy"/>
+        <TARGETLOADORDER ORDER ="1" TARGETINSTANCE ="Shortcut_To_INT_CURR_EXCH"/>
+        <MAPPINGVARIABLE DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" ISEXPRESSIONVARIABLE ="NO" ISPARAM ="YES" NAME ="$$ODY_SYSDATE_GE" PRECISION ="100" SCALE ="0" USERDEFINED ="YES"/>
+        <ERPINFO/>
+    </MAPPING>
+    <SHORTCUT COMMENTS ="Odyssey Table That Holds the Exchange Rates from one currency to another." DBDNAME ="Odyssey" FOLDERNAME ="Odyssey" NAME ="Shortcut_To_EXCH_RTS" OBJECTSUBTYPE ="Source Definition" OBJECTTYPE ="SOURCE" REFERENCEDDBD ="Odyssey" REFERENCETYPE ="GLOBAL" REFOBJECTNAME ="EXCH_RTS" REPOSITORYNAME ="GLOBAL_REPO_PROD_1052" VERSIONNUMBER ="1"/>
+    <SHORTCUT COMMENTS ="This table contains daily exchange rates to be used in converting Local currencies to USD equivalent for res/ rent transactions." FOLDERNAME ="Data_Warehouse" NAME ="Shortcut_To_INT_CURR_EXCH" OBJECTSUBTYPE ="Target Definition" OBJECTTYPE ="TARGET" REFERENCETYPE ="GLOBAL" REFOBJECTNAME ="INT_CURR_EXCH" REPOSITORYNAME ="GLOBAL_REPO_PROD_1052" VERSIONNUMBER ="1"/>
+    <SHORTCUT COMMENTS ="Stored procedure that runs the daily exchange validation procedure." FOLDERNAME ="Data_Warehouse" NAME ="Shortcut_To_PKG_DW.SP_CURRENCY_DAILY" OBJECTSUBTYPE ="Stored Procedure" OBJECTTYPE ="TRANSFORMATION" REFERENCETYPE ="GLOBAL" REFOBJECTNAME ="PKG_DW.SP_CURRENCY_DAILY" REPOSITORYNAME ="GLOBAL_REPO_PROD_1052" VERSIONNUMBER ="1"/>
+    <CONFIG DESCRIPTION ="Default session configuration object" ISDEFAULT ="YES" NAME ="default_session_config" VERSIONNUMBER ="2">
+        <ATTRIBUTE NAME ="Advanced" VALUE =""/>
+        <ATTRIBUTE NAME ="Constraint based load ordering" VALUE ="NO"/>
+        <ATTRIBUTE NAME ="Cache LOOKUP() function" VALUE ="YES"/>
+        <ATTRIBUTE NAME ="Default buffer block size" VALUE ="Auto"/>
+        <ATTRIBUTE NAME ="Line Sequential buffer length" VALUE ="1024"/>
+        <ATTRIBUTE NAME ="Maximum Memory Allowed For Auto Memory Attributes" VALUE ="0"/>
+        <ATTRIBUTE NAME ="Maximum Percentage of Total Memory Allowed For Auto Memory Attributes" VALUE ="5"/>
+        <ATTRIBUTE NAME ="Additional Concurrent Pipelines for Lookup Cache Creation" VALUE ="0"/>
+        <ATTRIBUTE NAME ="Custom Properties" VALUE =""/>
+        <ATTRIBUTE NAME ="Pre-build lookup cache" VALUE ="Auto"/>
+        <ATTRIBUTE NAME ="Optimization Level" VALUE ="Medium"/>
+        <ATTRIBUTE NAME ="DateTime Format String" VALUE ="MM/DD/YYYY HH24:MI:SS"/>
+        <ATTRIBUTE NAME ="Pre 85 Timestamp Compatibility" VALUE ="YES"/>
+        <ATTRIBUTE NAME ="Log Options" VALUE ="0"/>
+        <ATTRIBUTE NAME ="Save session log by" VALUE ="Session runs"/>
+        <ATTRIBUTE NAME ="Save session log for these runs" VALUE ="0"/>
+        <ATTRIBUTE NAME ="Session Log File Max Size" VALUE ="0"/>
+        <ATTRIBUTE NAME ="Session Log File Max Time Period" VALUE ="0"/>
+        <ATTRIBUTE NAME ="Maximum Partial Session Log Files" VALUE ="1"/>
+        <ATTRIBUTE NAME ="Writer Commit Statistics Log Frequency" VALUE ="1"/>
+        <ATTRIBUTE NAME ="Writer Commit Statistics Log Interval" VALUE ="0"/>
+        <ATTRIBUTE NAME ="Error handling" VALUE =""/>
+        <ATTRIBUTE NAME ="Stop on errors" VALUE ="0"/>
+        <ATTRIBUTE NAME ="Override tracing" VALUE ="None"/>
+        <ATTRIBUTE NAME ="On Stored Procedure error" VALUE ="Stop"/>
+        <ATTRIBUTE NAME ="On Pre-session command task error" VALUE ="Stop"/>
+        <ATTRIBUTE NAME ="On Pre-Post SQL error" VALUE ="Stop"/>
+        <ATTRIBUTE NAME ="Enable Recovery" VALUE ="NO"/>
+        <ATTRIBUTE NAME ="Error Log Type" VALUE ="None"/>
+        <ATTRIBUTE NAME ="Error Log Table Name Prefix" VALUE =""/>
+        <ATTRIBUTE NAME ="Error Log File Name" VALUE ="PMError.log"/>
+        <ATTRIBUTE NAME ="Log Source Row Data" VALUE ="NO"/>
+        <ATTRIBUTE NAME ="Data Column Delimiter" VALUE ="|"/>
+        <ATTRIBUTE NAME ="Partitioning Options" VALUE =""/>
+        <ATTRIBUTE NAME ="Dynamic Partitioning" VALUE ="Disabled"/>
+        <ATTRIBUTE NAME ="Number of Partitions" VALUE ="1"/>
+        <ATTRIBUTE NAME ="Multiplication Factor" VALUE ="Auto"/>
+        <ATTRIBUTE NAME ="Session on Grid" VALUE =""/>
+        <ATTRIBUTE NAME ="Is Enabled" VALUE ="NO"/>
+    </CONFIG>
+    <WORKFLOW DESCRIPTION ="" ISENABLED ="YES" ISRUNNABLESERVICE ="NO" ISSERVICE ="NO" ISVALID ="YES" NAME ="inodycurr01" REUSABLE_SCHEDULER ="NO" SCHEDULERNAME ="Scheduler" SERVERNAME ="REPO_PROD_1052_IS" SERVER_DOMAINNAME ="Domain_INFA_PROD_1052" SUSPEND_ON_ERROR ="NO" TASKS_MUST_RUN_ON_SERVER ="NO" VERSIONNUMBER ="2">
+        <SCHEDULER DESCRIPTION ="" NAME ="Scheduler" REUSABLE ="NO" VERSIONNUMBER ="1">
+            <SCHEDULEINFO SCHEDULETYPE ="ONDEMAND"/>
+        </SCHEDULER>
+        <TASK DESCRIPTION ="" NAME ="Start" REUSABLE ="NO" TYPE ="Start" VERSIONNUMBER ="1"/>
+        <SESSION DESCRIPTION ="" ISVALID ="YES" MAPPINGNAME ="m_ODY_INT_CURR_EXCH" NAME ="inodycurr01" REUSABLE ="NO" SORTORDER ="Binary" VERSIONNUMBER ="2">
+            <SESSTRANSFORMATIONINST ISREPARTITIONPOINT ="YES" PARTITIONTYPE ="PASS THROUGH" PIPELINE ="1" SINSTANCENAME ="Shortcut_To_INT_CURR_EXCH" STAGE ="1" TRANSFORMATIONNAME ="Shortcut_To_INT_CURR_EXCH" TRANSFORMATIONTYPE ="Target Definition">
+                <ATTRIBUTE NAME ="Table Name Prefix" VALUE ="OSDWADMIN"/>
+            </SESSTRANSFORMATIONINST>
+            <SESSTRANSFORMATIONINST ISREPARTITIONPOINT ="NO" PIPELINE ="1" SINSTANCENAME ="EXP_Get_Data" STAGE ="2" TRANSFORMATIONNAME ="EXP_Get_Data" TRANSFORMATIONTYPE ="Expression">
+                <PARTITION DESCRIPTION ="" NAME ="Partition #1"/>
+            </SESSTRANSFORMATIONINST>
+            <SESSTRANSFORMATIONINST ISREPARTITIONPOINT ="NO" PIPELINE ="1" SINSTANCENAME ="UPDTRANS" STAGE ="2" TRANSFORMATIONNAME ="UPDTRANS" TRANSFORMATIONTYPE ="Update Strategy">
+                <PARTITION DESCRIPTION ="" NAME ="Partition #1"/>
+            </SESSTRANSFORMATIONINST>
+            <SESSTRANSFORMATIONINST ISREPARTITIONPOINT ="NO" PIPELINE ="0" SINSTANCENAME ="LKP_INT_CURRENCY" STAGE ="0" TRANSFORMATIONNAME ="LKP_INT_CURRENCY" TRANSFORMATIONTYPE ="Lookup Procedure">
+                <ATTRIBUTE NAME ="Datetime Format" VALUE =""/>
+                <ATTRIBUTE NAME ="Case Sensitive String Comparison" VALUE ="NO"/>
+            </SESSTRANSFORMATIONINST>
+            <SESSTRANSFORMATIONINST ISREPARTITIONPOINT ="NO" PIPELINE ="0" SINSTANCENAME ="Shortcut_To_EXCH_RTS" STAGE ="0" TRANSFORMATIONNAME ="Shortcut_To_EXCH_RTS" TRANSFORMATIONTYPE ="Source Definition">
+                <ATTRIBUTE NAME ="Owner Name" VALUE ="GWYDB"/>
+            </SESSTRANSFORMATIONINST>
+            <SESSTRANSFORMATIONINST ISREPARTITIONPOINT ="YES" PARTITIONTYPE ="PASS THROUGH" PIPELINE ="1" SINSTANCENAME ="SQ_Shortcut_To_EXCH_RTS" STAGE ="2" TRANSFORMATIONNAME ="SQ_Shortcut_To_EXCH_RTS" TRANSFORMATIONTYPE ="Source Qualifier">
+                <ATTRIBUTE NAME ="Source Filter" VALUE ="EXCH_RTS.CUR_CURR_CD_TO = &apos;USD&apos; AND EXCH_RTS.EXR_TYP_CD = &apos;INVOICING&apos; AND &#xD;&#xA;EXCH_RTS.EFF_DT &gt;= TRUNC($$ODY_SYSDATE_GE) - 30"/>
+            </SESSTRANSFORMATIONINST>
+            <SESSTRANSFORMATIONINST ISREPARTITIONPOINT ="NO" PIPELINE ="0" SINSTANCENAME ="Shortcut_To_PKG_DW_SP_CURRENCY_DAILY" STAGE ="0" TRANSFORMATIONNAME ="Shortcut_To_PKG_DW_SP_CURRENCY_DAILY" TRANSFORMATIONTYPE ="Stored Procedure"/>
+            <CONFIGREFERENCE REFOBJECTNAME ="default_session_config" TYPE ="Session config">
+                <ATTRIBUTE NAME ="Save session log for these runs" VALUE ="5"/>
+                <ATTRIBUTE NAME ="Stop on errors" VALUE ="10"/>
+                <ATTRIBUTE NAME ="On Stored Procedure error" VALUE ="Continue"/>
+            </CONFIGREFERENCE>
+            <SESSIONEXTENSION NAME ="Relational Writer" SINSTANCENAME ="Shortcut_To_INT_CURR_EXCH" SUBTYPE ="Relational Writer" TRANSFORMATIONTYPE ="Target Definition" TYPE ="WRITER">
+                <CONNECTIONREFERENCE CNXREFNAME ="DB Connection" CONNECTIONNAME ="RNEDW02_INFORMATICA" CONNECTIONNUMBER ="1" CONNECTIONSUBTYPE ="Oracle" CONNECTIONTYPE ="Relational" VARIABLE =""/>
+                <ATTRIBUTE NAME ="Target load type" VALUE ="Normal"/>
+                <ATTRIBUTE NAME ="Insert" VALUE ="YES"/>
+                <ATTRIBUTE NAME ="Update as Update" VALUE ="YES"/>
+                <ATTRIBUTE NAME ="Update as Insert" VALUE ="NO"/>
+                <ATTRIBUTE NAME ="Update else Insert" VALUE ="NO"/>
+                <ATTRIBUTE NAME ="Enable array upsert or update" VALUE ="NO"/>
+                <ATTRIBUTE NAME ="Delete" VALUE ="YES"/>
+                <ATTRIBUTE NAME ="Truncate target table option" VALUE ="NO"/>
+                <ATTRIBUTE NAME ="Reject file directory" VALUE ="$PMBadFileDir&#x5c;"/>
+                <ATTRIBUTE NAME ="Reject filename" VALUE ="int_curr_exch.bad"/>
+            </SESSIONEXTENSION>
+            <SESSIONEXTENSION NAME ="Relational Lookup" SINSTANCENAME ="LKP_INT_CURRENCY" SUBTYPE ="Relational Lookup" TRANSFORMATIONTYPE ="Lookup Procedure" TYPE ="LOOKUPEXTENSION">
+                <CONNECTIONREFERENCE CNXREFNAME ="DB Connection" CONNECTIONNAME ="" CONNECTIONNUMBER ="1" CONNECTIONSUBTYPE ="" CONNECTIONTYPE ="" VARIABLE ="$Target"/>
+            </SESSIONEXTENSION>
+            <SESSIONEXTENSION DSQINSTNAME ="SQ_Shortcut_To_EXCH_RTS" DSQINSTTYPE ="Source Qualifier" NAME ="Relational Reader" SINSTANCENAME ="Shortcut_To_EXCH_RTS" SUBTYPE ="Relational Reader" TRANSFORMATIONTYPE ="Source Definition" TYPE ="READER"/>
+            <SESSIONEXTENSION NAME ="Relational Reader" SINSTANCENAME ="SQ_Shortcut_To_EXCH_RTS" SUBTYPE ="Relational Reader" TRANSFORMATIONTYPE ="Source Qualifier" TYPE ="READER">
+                <CONNECTIONREFERENCE CNXREFNAME ="DB Connection" CONNECTIONNAME ="ODYRPT2_COGRPT" CONNECTIONNUMBER ="1" CONNECTIONSUBTYPE ="Oracle" CONNECTIONTYPE ="Relational" VARIABLE =""/>
+            </SESSIONEXTENSION>
+            <ATTRIBUTE NAME ="General Options" VALUE =""/>
+            <ATTRIBUTE NAME ="Write Backward Compatible Session Log File" VALUE ="NO"/>
+            <ATTRIBUTE NAME ="Session Log File Name" VALUE ="inodycurr01.log"/>
+            <ATTRIBUTE NAME ="Session Log File directory" VALUE ="$PMSessionLogDir&#x5c;"/>
+            <ATTRIBUTE NAME ="Parameter Filename" VALUE ="$PMRootDir&#x5c;ParamFiles&#x5c;Dell_infa_parms.txt"/>
+            <ATTRIBUTE NAME ="Enable Test Load" VALUE ="NO"/>
+            <ATTRIBUTE NAME ="$Source connection value" VALUE ="ODYRPT2_COGRPT"/>
+            <ATTRIBUTE NAME ="$Target connection value" VALUE ="RNEDW02_INFORMATICA"/>
+            <ATTRIBUTE NAME ="Treat source rows as" VALUE ="Data driven"/>
+            <ATTRIBUTE NAME ="Commit Type" VALUE ="Target"/>
+            <ATTRIBUTE NAME ="Commit Interval" VALUE ="10000"/>
+            <ATTRIBUTE NAME ="Commit On End Of File" VALUE ="YES"/>
+            <ATTRIBUTE NAME ="Rollback Transactions on Errors" VALUE ="NO"/>
+            <ATTRIBUTE NAME ="Recovery Strategy" VALUE ="Restart task"/>
+            <ATTRIBUTE NAME ="Java Classpath" VALUE =""/>
+            <ATTRIBUTE NAME ="Performance" VALUE =""/>
+            <ATTRIBUTE NAME ="DTM buffer size" VALUE ="Auto"/>
+            <ATTRIBUTE NAME ="Collect performance data" VALUE ="NO"/>
+            <ATTRIBUTE NAME ="Write performance data to repository" VALUE ="NO"/>
+            <ATTRIBUTE NAME ="Incremental Aggregation" VALUE ="NO"/>
+            <ATTRIBUTE NAME ="Enable high precision" VALUE ="NO"/>
+            <ATTRIBUTE NAME ="Session retry on deadlock" VALUE ="NO"/>
+            <ATTRIBUTE NAME ="Pushdown Optimization" VALUE ="None"/>
+            <ATTRIBUTE NAME ="Allow Temporary View for Pushdown" VALUE ="NO"/>
+            <ATTRIBUTE NAME ="Allow Temporary Sequence for Pushdown" VALUE ="NO"/>
+            <ATTRIBUTE NAME ="Allow Pushdown for User Incompatible Connections" VALUE ="NO"/>
+        </SESSION>
+        <TASKINSTANCE DESCRIPTION ="" FAIL_PARENT_IF_INSTANCE_DID_NOT_RUN ="NO" FAIL_PARENT_IF_INSTANCE_FAILS ="YES" ISENABLED ="YES" NAME ="inodycurr01" REUSABLE ="NO" TASKNAME ="inodycurr01" TASKTYPE ="Session" TREAT_INPUTLINK_AS_AND ="YES"/>
+        <TASKINSTANCE DESCRIPTION ="" ISENABLED ="YES" NAME ="Start" REUSABLE ="NO" TASKNAME ="Start" TASKTYPE ="Start"/>
+        <WORKFLOWLINK CONDITION ="" FROMTASK ="Start" TOTASK ="inodycurr01"/>
+        <WORKFLOWVARIABLE DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="The time this task started" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.StartTime" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="The time this task completed" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.EndTime" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="Status of this task&apos;s execution" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.Status" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="Status of the previous task that is not disabled" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.PrevTaskStatus" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="Error code for this task&apos;s execution" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.ErrorCode" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="Error message for this task&apos;s execution" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.ErrorMsg" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="bigint" DEFAULTVALUE ="" DESCRIPTION ="Rows successfully read" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.SrcSuccessRows" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="bigint" DEFAULTVALUE ="" DESCRIPTION ="Rows failed to read" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.SrcFailedRows" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="bigint" DEFAULTVALUE ="" DESCRIPTION ="Rows successfully loaded" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.TgtSuccessRows" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="bigint" DEFAULTVALUE ="" DESCRIPTION ="Rows failed to load" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.TgtFailedRows" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="Total number of transformation errors" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.TotalTransErrors" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="First error code" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.FirstErrorCode" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="First error message" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$inodycurr01.FirstErrorMsg" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="The time this task started" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$Start.StartTime" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="The time this task completed" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$Start.EndTime" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="Status of this task&apos;s execution" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$Start.Status" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="Status of the previous task that is not disabled" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$Start.PrevTaskStatus" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="Error code for this task&apos;s execution" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$Start.ErrorCode" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="Error message for this task&apos;s execution" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$Start.ErrorMsg" USERDEFINED ="NO"/>
+        <WORKFLOWVARIABLE DATATYPE ="integer" DEFAULTVALUE ="0" DESCRIPTION ="Created by the RU4 upgrade." ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$$passInStatus" USERDEFINED ="YES"/>
+        <ATTRIBUTE NAME ="Parameter Filename" VALUE =""/>
+        <ATTRIBUTE NAME ="Write Backward Compatible Workflow Log File" VALUE ="YES"/>
+        <ATTRIBUTE NAME ="Workflow Log File Name" VALUE ="inodycurr01.log"/>
+        <ATTRIBUTE NAME ="Workflow Log File Directory" VALUE ="$PMWorkflowLogDir&#x5c;"/>
+        <ATTRIBUTE NAME ="Save Workflow log by" VALUE ="By runs"/>
+        <ATTRIBUTE NAME ="Save workflow log for these runs" VALUE ="0"/>
+        <ATTRIBUTE NAME ="Service Name" VALUE =""/>
+        <ATTRIBUTE NAME ="Service Timeout" VALUE ="0"/>
+        <ATTRIBUTE NAME ="Is Service Visible" VALUE ="NO"/>
+        <ATTRIBUTE NAME ="Is Service Protected" VALUE ="NO"/>
+        <ATTRIBUTE NAME ="Enable HA recovery" VALUE ="NO"/>
+        <ATTRIBUTE NAME ="Automatically recover terminated tasks" VALUE ="NO"/>
+        <ATTRIBUTE NAME ="Service Level Name" VALUE ="Default"/>
+        <ATTRIBUTE NAME ="Allow concurrent run with unique run instance name" VALUE ="NO"/>
+        <ATTRIBUTE NAME ="Allow concurrent run with same run instance name" VALUE ="NO"/>
+        <ATTRIBUTE NAME ="Maximum number of concurrent runs" VALUE ="0"/>
+        <ATTRIBUTE NAME ="Assigned Web Services Hubs" VALUE =""/>
+        <ATTRIBUTE NAME ="Maximum number of concurrent runs per Hub" VALUE ="1000"/>
+        <ATTRIBUTE NAME ="Expected Service Time" VALUE ="1"/>
+    </WORKFLOW>
+</FOLDER>
+</REPOSITORY>
+<REPOSITORY NAME="GLOBAL_REPO_PROD_1052" VERSION="189" CODEPAGE="Latin1" DATABASETYPE="Oracle">
+<FOLDER NAME="Odyssey" GROUP="" OWNER="Administrator" SHARED="SHARED" DESCRIPTION="Contains all documented Odyssey tables." PERMISSIONS="rwx---r--" UUID="8de1ec0b-7d64-428f-a3fc-198d5a8ab6d5">
+    <SOURCE BUSINESSNAME ="" DATABASETYPE ="Oracle" DBDNAME ="Odyssey" DESCRIPTION ="Odyssey Table That Holds the Exchange Rates from one currency to another." NAME ="EXCH_RTS" OBJECTVERSION ="1" OWNERNAME ="GWYDB" VERSIONNUMBER ="1">
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="varchar2" DESCRIPTION ="" FIELDNUMBER ="1" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="0" LEVEL ="0" NAME ="EXR_TYP_CD" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="0" PHYSICALLENGTH ="10" PHYSICALOFFSET ="0" PICTURETEXT ="" PRECISION ="10" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="varchar2" DESCRIPTION ="" FIELDNUMBER ="2" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="0" LEVEL ="0" NAME ="CUR_CURR_CD_FROM" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="0" PHYSICALLENGTH ="3" PHYSICALOFFSET ="10" PICTURETEXT ="" PRECISION ="3" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="varchar2" DESCRIPTION ="" FIELDNUMBER ="3" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="0" LEVEL ="0" NAME ="CUR_CURR_CD_TO" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="0" PHYSICALLENGTH ="3" PHYSICALOFFSET ="13" PICTURETEXT ="" PRECISION ="3" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="date" DESCRIPTION ="" FIELDNUMBER ="4" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="19" LEVEL ="0" NAME ="EFF_DT" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="0" PHYSICALLENGTH ="19" PHYSICALOFFSET ="16" PICTURETEXT ="" PRECISION ="19" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="varchar2" DESCRIPTION ="" FIELDNUMBER ="5" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="0" LEVEL ="0" NAME ="CREAT_BY" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="19" PHYSICALLENGTH ="30" PHYSICALOFFSET ="35" PICTURETEXT ="" PRECISION ="30" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="date" DESCRIPTION ="" FIELDNUMBER ="6" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="19" LEVEL ="0" NAME ="CREAT_DT" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="19" PHYSICALLENGTH ="19" PHYSICALOFFSET ="65" PICTURETEXT ="" PRECISION ="19" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="date" DESCRIPTION ="" FIELDNUMBER ="7" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="19" LEVEL ="0" NAME ="END_DT" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="38" PHYSICALLENGTH ="19" PHYSICALOFFSET ="84" PICTURETEXT ="" PRECISION ="19" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="number(p,s)" DESCRIPTION ="" FIELDNUMBER ="8" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="14" LEVEL ="0" NAME ="RT" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="57" PHYSICALLENGTH ="12" PHYSICALOFFSET ="103" PICTURETEXT ="" PRECISION ="12" SCALE ="7" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="varchar2" DESCRIPTION ="" FIELDNUMBER ="9" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="0" LEVEL ="0" NAME ="LST_UPD_BY" NULLABLE ="NULL" OCCURS ="0" OFFSET ="71" PHYSICALLENGTH ="30" PHYSICALOFFSET ="115" PICTURETEXT ="" PRECISION ="30" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="date" DESCRIPTION ="" FIELDNUMBER ="10" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="19" LEVEL ="0" NAME ="LST_UPD_DT" NULLABLE ="NULL" OCCURS ="0" OFFSET ="71" PHYSICALLENGTH ="19" PHYSICALOFFSET ="145" PICTURETEXT ="" PRECISION ="19" SCALE ="0" USAGE_FLAGS =""/>
+    </SOURCE>
+</FOLDER>
+<FOLDER NAME="Data_Warehouse" GROUP="" OWNER="Administrator" SHARED="SHARED" DESCRIPTION="Contains Data Warehouse related information, table definitions, re-usable transformations etc. Only approved Metadata Should go into this folder." PERMISSIONS="rwx---rw-" UUID="46393f5a-09af-4af2-bccb-039cbc949a3b">
+    <TRANSFORMATION DESCRIPTION ="Stored procedure that runs the daily exchange validation procedure." NAME ="PKG_DW.SP_CURRENCY_DAILY" OBJECTVERSION ="1" REUSABLE ="YES" TYPE ="Stored Procedure" VERSIONNUMBER ="1">
+        <TABLEATTRIBUTE NAME ="Stored Procedure Name" VALUE ="PKG_DW.SP_CURRENCY_DAILY"/>
+        <TABLEATTRIBUTE NAME ="Connection Information" VALUE ="$Target"/>
+        <TABLEATTRIBUTE NAME ="Call Text" VALUE ="OSDWADMIN.PKG_DW.SP_CURRENCY_DAILY()"/>
+        <TABLEATTRIBUTE NAME ="Stored Procedure Type" VALUE ="Target Post Load"/>
+        <TABLEATTRIBUTE NAME ="Execution Order" VALUE ="1"/>
+        <TABLEATTRIBUTE NAME ="Tracing Level" VALUE ="Normal"/>
+        <TABLEATTRIBUTE NAME ="Subsecond Precision" VALUE ="0"/>
+        <TABLEATTRIBUTE NAME ="Output is Repeatable" VALUE ="Based On Input Order"/>
+        <TABLEATTRIBUTE NAME ="Output is Deterministic" VALUE ="YES"/>
+    </TRANSFORMATION>
+    <TARGET BUSINESSNAME ="Interface Currency Exchange Rate" CONSTRAINT ="" DATABASETYPE ="Oracle" DESCRIPTION ="This table contains daily exchange rates to be used in converting Local currencies to USD equivalent for res/ rent transactions." NAME ="INT_CURR_EXCH" OBJECTVERSION ="1" TABLEOPTIONS ="" VERSIONNUMBER ="1">
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="number(p,s)" DESCRIPTION ="Source System Id." FIELDNUMBER ="1" KEYTYPE ="NOT A KEY" NAME ="SYSTEM_ID" NULLABLE ="NOTNULL" PICTURETEXT ="" PRECISION ="4" SCALE ="0"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="date" DESCRIPTION ="Effective date of exchange rate." FIELDNUMBER ="2" KEYTYPE ="PRIMARY KEY" NAME ="EXCH_DT" NULLABLE ="NOTNULL" PICTURETEXT ="" PRECISION ="19" SCALE ="0"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="varchar2" DESCRIPTION ="Currency code of the &quot;From&quot; country." FIELDNUMBER ="3" KEYTYPE ="PRIMARY KEY" NAME ="CUR_COUNTRY_CD_FROM" NULLABLE ="NOTNULL" PICTURETEXT ="" PRECISION ="3" SCALE ="0"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="varchar2" DESCRIPTION ="Currency code of the &quot;To&quot; country." FIELDNUMBER ="4" KEYTYPE ="PRIMARY KEY" NAME ="CUR_COUNTRY_CD_TO" NULLABLE ="NOTNULL" PICTURETEXT ="" PRECISION ="3" SCALE ="0"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="number(p,s)" DESCRIPTION ="Exchange Rate used in the res/ rent transaction." FIELDNUMBER ="5" KEYTYPE ="NOT A KEY" NAME ="RATE" NULLABLE ="NOTNULL" PICTURETEXT ="" PRECISION ="12" SCALE ="7"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="date" DESCRIPTION ="DW load date and time stamp." FIELDNUMBER ="6" KEYTYPE ="NOT A KEY" NAME ="LOAD_TS" NULLABLE ="NULL" PICTURETEXT ="" PRECISION ="19" SCALE ="0"/>
+    </TARGET>
+</FOLDER>
+</REPOSITORY>
+</POWERMART>

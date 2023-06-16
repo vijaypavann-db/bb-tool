@@ -1,0 +1,95 @@
+{
+	"inherit_from":["general_sql_specs.json"],
+	"target_sql" : "DATABRICKS",
+	"from_after_delete" : "1",
+
+	//"CUSTOM_CONVERTER_MODULES" : ["!BB_CONFIG_CONVERTER!/netezza2athena.pl"],
+
+	//"initialize_hooks_call" : "::init_hooks_netezza", //initialize context, pass all relevant info
+	//"prescan_and_collect_info_hook" : "::prescan_code_netezza",
+
+	//"partition_catalog_file" : "!BB_CONFIG_CONVERTER!/Custom/Deloitte/partition_spec.txt",
+	//"pre_finalization_handler" : "::finalize_content",
+
+
+	"extract_embedded_sql" : ["sh","ksh","ssh"], //listing extensions of files from which to extract embedded sql.  Use "embedded_sql_tags" key to list strings depicting the start of sql
+	"code_fragment_breakers": {
+		"line_end": [";", ";\s*\-\-"]
+	},
+	//apply substitutions when lines that begin with these tokens
+	//"line_begin_with_subst" : [
+	//	{"from" : "set heading off.*", "to" : "!set header=false"},
+	//	{"from" : "set heading on", "to" : "!set header=true"},
+	//	{"from" : "DEFINE", "to" : "!DEFINE"},
+	//	{"from" :"@", "to" : "!source "}
+	//	//{"from" : "WHENEVER SQLERROR EXIT SQL.SQLCODE", "to" : "!set exit_on_error=true"}
+	//],
+	//
+	"separate_begin_keyword" : "1",
+	
+	"line_subst" : [
+		{"from" : "@PARTITIONNUM.*@NUMPARTITIONS.*\+\s+1", "to" : "row_number() over (order by 1)"},
+		{"from" : ".INROWNUM", "to" : "row_number() over (order by 1)"},
+		{"from" : ".PARTITIONNUM", "to" : "row_number() over (order by 1)"},
+		{"from" : "\"", "to" : "", "statement_categories" : ["TABLE_DDL"]}, // get rid of double quotes in table DDLs
+		{"from" : "\bDISTRIBUTE\s+ON\s*\(",  "to" : ""},
+		{"from" : "\bORGANIZE\s+ON",  "to" : ""},
+		{"from" : "\bBYTEINT\b",  "to" : "TINYINT", "statement_categories" : ["TABLE_DDL"]},
+		{"from" : "\bCHAR\b",  "to" : "VARCHAR","statement_categories" : ["TABLE_DDL"]},
+		{"from" : "\bCHARACTER\s+VARYING\s*\((.*?)\)",  "to" : "VARCHAR($1)", "statement_categories" : ["TABLE_DDL"]},
+		{"from" : "\bCHARACTER\s*\((.*?)\)",  "to" : "VARCHAR($1)", "statement_categories" : ["TABLE_DDL"]},
+		{"from" : "\bDOUBLE\b PRECISION",  "to" : "DOUBLE", "statement_categories" : ["TABLE_DDL"]},
+		{"from" : "\bNVARCHAR\b\(.*?\)",  "to" : "STRING", "statement_categories" : ["TABLE_DDL"]},
+		{"from" : "\bNATIONAL\s+CHARACTER\s+VARYING\s*\((.*?)\)",  "to" : "VARCHAR($1)", "statement_categories" : ["TABLE_DDL"]},
+		{"from" : "\bTIME\b",  "to" : "STRING", "statement_categories" : ["TABLE_DDL"]},
+		{"from" : "\bTimewithzone\b",  "to" : "STRING", "statement_categories" : ["TABLE_DDL"]},
+		{"from" : "'YYYY\-MM\-DD hh24\:mi\:ss\'", "to" : "'yyyy-MM-dd HH:mm:ss'"},
+		{"from" : "'YYYY\-MM\-DD hh12\:mi\:ss\'", "to" : "'yyyy-MM-dd hh:mm:ss'"}
+	],
+
+		
+	 "block_subst" : [
+	 	{"from" : "\bDISTRIBUTE\s+ON\s*\(",  "to" : "DISTRIBUTE_CLAUSE_FUNCTION("},
+		{"from" : "\bTOOLKIT\.SQLEXT\.GROUP_CONCAT\b\s*\((\s*\(.*?\)\:\:VARCHAR\(.*?\))\s*\,\s*\(\s*\'\|\'\:\:\"VARCHAR\"\s*\)\:\:VARCHAR\s*\(.*?\)\s*\)\s*\)\s*\|\|\s*\'\|\'\:\:\"VARCHAR\"\s*\)",  "to" : "LIST_AGG($1, '|')) || '|'::\"VARCHAR\")"},
+		{"from" : "\bTOOLKIT\.SQLEXT\.GROUP_CONCAT\b",  "to" : "LISTAGG"},
+		{"from" : "TOOLKIT\.SQLEXT\.ISNUMBER\s*\(ISNULL\((\s*\w*\.*\w+\s*)\,(.*?)\)", "to" : "(NVL($1,$2) regexp '^[0-9\.]+$'"},
+		{"from" : "TOOLKIT\.SQLEXT\.ISDATE\s*\(ISNULL\((\s*\w*\.*\w+\s*)\,\s*(\'.*?\')\)\s*\,\s*(\'yyyy\-MM\-dd\s+HH\:mm\:ss\')\s*\)", "to" : "TO_TIMESTAMP(NVL($1,$2),$3) is not null"},
+		{"from" : "TOOLKIT\.SQLEXT\.ISDATE\s*\(NVL\((\s*\w*\.*\w+\s*)\,\s*(\'.*?\')\)\s*\,\s*(\'yyyy\-MM\-dd\s+HH\:mm\:ss\')\s*\)", "to" : "TO_TIMESTAMP(NVL($1,$2),$3) is not null"},
+		{"from" : "TOOLKIT\.SQLEXT\.ISDATE\s*\(ISNULL\((\s*\w*\.*\w+\s*)\,\s*(\'.*?\')\)\s*\,\s*(\'yyyy\-MM\-dd\')\s*\)", "to" : "TO_DATE(NVL($1,$2),$3) is not null"},
+		{"from" : "TOOLKIT\.SQLEXT\.ISDATE\s*\(NVL\((\s*\w*\.*\w+\s*)\,\s*(\'.*?\')\)\s*\,\s*(\'yyyy\-MM\-dd\')\s*\)", "to" : "TO_DATE(NVL($1,$2),$3) is not null"}		
+		//,{"from" : "TOOLKIT\.SQLEXT\.ISDATE\s*\((NVL\(\s*\w*\.*\w+\s*)\,(.*?)\)\s*\,(\'.*?\'\s*\))", "to" : "TO_TIMESTAMP($1,$2),$3 is not null"}
+		],
+	
+
+	"function_subst" : [
+		{"from" : "DISTRIBUTE_CLAUSE_FUNCTION", "to" : "__BLANK__"},
+		{"from" : "ORGANIZE_CLAUSE_FUNCTION", "to" : "__BLANK__"},
+		{"from" : "TOOLKIT.SQLEXT.ISNUMBER","num_args" : "1", "output_template" : "($1 regexp '^[0-9\.]+$')"},
+	    {"from" : "TO_CHAR", "num_args" : "2", "output_template"  : "DATE_FORMAT($1,$2"},
+        {"from" : "TO_CHAR", "num_args" : "1", "output_template"  : "CAST($1 AS STRING)"},
+		{"from" : "UpCase", "to" : "UPPER"},
+		{"from" : "LEN", "to" : "length"},
+		{"from" : "to_int", "output_template" : "CAST($1 as int)"},
+		{"from" : "CurrentDate", "output_template" : "CURRENT_DATE"},
+		{"from" : "TRIM", "arg_pattern" : {"3" : "L"},  "output_template" : "regexp_replace($1, r'^[$2]*', '')"},
+		{"from" : "TRIMLEADINGTRAILING", "to" : "trim"},
+		{"from": "INDEX",                            "output_template": "LOCATE($2,$1)", "statement_categories": ["READ_DML_INTO_VAR","WRITE_DML","READ_DML"]},
+		{"from": "INSTR",                            "output_template": "CHARINDEX($2,$1)",    "num_args" : "2"},
+		{"from": "INSTR",                            "output_template": "CHARINDEX($2,$1,$3)", "num_args" : "3"},
+		{"from": "INSTR",                            "output_template": "INSTR_MULTI_ARG($1,$2,$3,$4)", "num_args" : "4"}, // this is a user defined python function
+		{"from": "STRTOK",                           "to" : "SPLIT"},
+		{"from": "ZEROIFNULL",                       "output_template": "COALESCE($1, 0)"},
+	    {"from": "NULLIFZERO",                       "output_template" : "NULLIF($1, 0)"},
+		{"from": "TRUNC",                            "to": "date_trunc", "arg_placement": { "1":"2||'DD'", "2":"1" } },
+		{"from" : "DECODE","num_args" : "5","output_template" :"case when $1=$2 then $3 when $1=$4 then $5 END"},
+		{"from" : "INT8","output_template" :"CAST($1 as LONG)"}
+	],
+	
+	"variable_patterns" : ["\$[a-z|A-Z|0-9|_]+?\$", "\$\$\w+", "\b[^\$]\$\w+"],
+
+	//enable column parsing for: manipulate on 1 column at a time, it is safer; for lin-place aliases, swap column order; format functionality handling
+	"column_level_parsing" : ["VIEW_DDL", "TABLE_DDL_AS_SELECT", "TABLE_DDL"],
+	"adjust_format_tokens" : "1",
+	"adjust_native_casting" : "1", //yet to be implemented
+	"embedded_sql_var_prefix" : "&"
+}
