@@ -1,0 +1,13 @@
+{
+	"inherit_from" : ["infa2databricks_dbsql_main.json"], 
+
+	"generate_variable_declaration":"1",
+	"sql_statement_separator" : ";\n",
+
+	"variable_declaration_template" : "CREATE WIDGET TEXT %VARNAME% DEFAULT %DEFAULT_VALUE%;",
+	"table_creation_statement" : "CREATE TEMPORARY VIEW %TABLE_NAME% AS\n%INNER_SQL%", //ensure there are %TABLE_NAME% and %INNER_SQL% tokens present in this spec
+	"CUSTOM_CONVERTER_MODULES" : ["!BB_CONFIG_CONVERTER!/databricks_output_hooks.pl"],
+	"component_header_comment" : "-- Component %COMPONENT%, Type %TYPE% %ADDITIONAL_COMMENT%"
+
+
+}

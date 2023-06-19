@@ -1,0 +1,18 @@
+{
+	
+	"target_file_extension" : "py",
+	"output_filename_template" : "%JOB_NAME%.",
+	"inherit_from" : ["infa2databricks_dbsql_main.json"], 
+
+	"variable_declaration_template" : "dbutils.widgets.text(\"%VARNAME%\",\"%DEFAULT_VALUE%\")",
+	"table_creation_statement" : "%TABLE_NAME% = spark.sql(\"\"\"\n%INNER_SQL%\"\"\")\n%TABLE_NAME%.createOrReplaceTempView(\"%TABLE_NAME%\")", //ensure there are %TABLE_NAME% and %INNER_SQL% tokens present in this spec
+	"component_header_comment" : "#Component %COMPONENT%, Type %TYPE% %ADDITIONAL_COMMENT%",
+
+	"wrap_ddl_statements" : "1",
+	"ddl_statement_wrap" : "spark.sql(\"\"\"%INNER_SQL%\"\"\").display()",
+
+	"fix_spark_sql_env" : "1",
+	"CUSTOM_CONVERTER_MODULES" : ["C:/Work/Projects/DWS/BBPerl/backend-perl-shared/Config/Converter/databricks_output_hooks.pl"],
+	"post_fragment_generation_routine" : "::replace_params_as_spark"
+
+}

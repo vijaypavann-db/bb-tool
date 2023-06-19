@@ -1,0 +1,665 @@
+{
+	"code_generation_language" : "SQL", // can be SQL or PYTHON
+	"target_file_extension" : "sql", // make sure this is in sync with code_generation_language setting.
+	"use_notebook_md" : 1, //indicate if databricks notebook markdowns should be used on the output or if we are generating a plain SQL or PYTHON file
+
+	"consolidate_nb_statements" : 1, //will consolidate variable declarations, simple assignments and comments into a single notebook command.  Comments above a statement will also be consolidated
+
+	"xsql_dql_wrapper": "xSqlStmt.query(\"\"\"\n%SQL%\n\"\"\", verbose=True) ",       // For SELECT
+	"xsql_dml_wrapper": "xSqlStmt.execute(\"\"\"\n%SQL%\n\"\"\", verbose=True) ",     // For UPDATE, INSERT, MERGE, DELETE, etc
+	"sparksql_wrapper": "spark.sql(\"\"\"\n%SQL%\n\"\"\").show(truncate=False) ",
+
+	"pre_finalization_handler" : "::databricks_finalize_code",
+
+	// This file is used to store / retrieve information during conversions, e.g. to save info during one conversion and retrive it in another.
+	// The default location is a file named "sqlconv_conversion_catalog.txt" in the directory pointed to by the TEMP environment variable.
+	"conversion_catalog_file": "!BB_CONVERSION_CATALOG_FILE!",
+
+	// ************ SYSTEM SETTINGS ************ //
+	"load_files" : ["!BB_CONFIG_CONVERTER_DIR!/teradata_source_hooks.pl"], //gets called from preprocess_routine
+	
+	// This routine gets first crack at source
+	"source_prescan_routine" : "::teradata_prescan",
+
+	"inherit_from":["databricks_output_hooks.json"],
+	"code_fragment_breakers": {
+		"line_start": ["\.[a-zA-Z]"],   // Teradata cmds, e.g. .IF, .EXPORT, etc.
+		"line_end": [";"]
+	},
+	
+	"adjust_commas" : "1", //gets rid of consecutive commas. commas preceeding closing params will be eliminated
+
+	"copy_into_xsql_template_file"     : "!BB_CONFIG_WRITER_DIR!/Python/python_copy_into_xsql.py",
+	"copy_into_sparksql_template_file" : "!BB_CONFIG_WRITER_DIR!/Python/python_copy_into_sparksql.py",
+	"merge_into_xsql_template_file"    : "!BB_CONFIG_WRITER_DIR!/Python/python_merge_into_xsql.py",
+	"merge_into_sparksql_template_file": "!BB_CONFIG_WRITER_DIR!/Python/python_merge_into_sparksql.py",
+	"insert_overwrite_template_file"   : "!BB_CONFIG_WRITER_DIR!/Python/python_insert_overwrite_xsql.py",
+	"invoked_notebook_template_file"   : "!BB_CONFIG_WRITER_DIR!/Python/invoked_notebook.py",
+
+	"macro_template": "def %MACRO_NAME%(%MACRO_PARMS%):~
+--<indent++>~
+  spark.sql(\"\"\"~
+     %MACRO_SQL%~
+  \"\"\".format(~
+     %MACRO_FORMAT%~
+  )).show(verbose=True)~
+--<indent-->",
+
+	"notebook_run_noparms_template": "~
+# FIXME: databricks.migrations.task Adjust the sample_store_proc notebook location and max execution time below if required~
+# import json~
+_resultJ = dbutils.notebook.run(\"./%NOTEBOOK_NAME%\", 60)~
+_result = json.loads(_resultJ)~
+",
+
+	"notebook_run_template": "~
+# FIXME: databricks.migrations.task Adjust the sample_store_proc notebook location and max execution time below if required~
+# import json~
+_resultJ = dbutils.notebook.run(\"./%NOTEBOOK_NAME%\", 60, {~
+--<indent++>~
+%IN_PARMS_RESULTJ%~
+--<indent-->~
+})~
+_result = json.loads(_resultJ)~
+%OUT_PARMS% = (_result[k] for k in [%IN_PARMS_RESULT%])~
+",
+
+	"bteq_run_xsqlstmt": "# COMMAND ----------~
+~
+# MAGIC %md~
+# MAGIC **Note:**~
+# MAGIC - Following notebook inclusion is required for conditional flow execution in converted bteq scripts~
+# MAGIC - Download the \"dbm_sql_runtime_utils_xsqlstmt\" notebook from 'https:\/\/github.com/databricks-migrations/sql-runtime-utils/tree/main/notebooks' repo location and place it in Databricks workspace's shared folder '/Shared/databricks-migrations'~
+~
+# COMMAND ----------~
+~
+# MAGIC %run /Shared/databricks-migrations/dbm_sql_runtime_utils_xsqlstmt~
+",
+
+	"python_header": "",     // "%python",
+
+	"preprocess_subst" : [ 
+		// This placeholder results eventually in a call to databricks_proc_arg_defs in databricks_output_hooks.pl,
+		// with teradata_prescan (in teradata_source_hooks.pl) having previously detected arg definitions between
+		// the parens in PROCEDURE...(...)...BEGIN, and loaded them into a structure that databricks_proc_arg_defs
+		// will output as "CREATE WIDGET..." statements.
+		// The "select __POST_BEGIN__;" is a dummy statement to work around "BEGIN ... ;" (the BEGIN is not terminated
+		// unitl the following semi-colon
+		// {"from": "\b(CREATE\s+OR\s+REPLACE|REPLACE|CREATE)\s+PROCEDURE.*?\(.*?\).*?\sBEGIN",            
+		{"from": "(^|\n)\s*(CREATE\s+OR\s+REPLACE|REPLACE|CREATE)\s+PROCEDURE.*?\(.*?\).*?\bBEGIN",            
+		   "to": "\n__PROC_DEF_PLACEHOLDER__;\n"},
+		// "to": "-- Procedure parameters:\n__PROC_DEF_PLACEHOLDER__;\nBEGIN\nselect __POST_BEGIN__;"},
+
+		//--------- Remove:
+		// -- DECLARE (CONTINUE|EXIT HANDLER) <not ;>+ BEGIN ... END\s*<possword>;
+		// -- DECLARE (CONTINUE|EXIT HANDLER) .*? ;
+		// Leave DECLARE ... CONDITION for now
+
+		// DECLARE\s+[^;]+\sBEGIN\s.*?\sEND\s*(\w+)?\s*
+		{"from": "\bDECLARE\s+(CONTINUE|EXIT\s+HANDLER)[^;]+\sBEGIN\s.*?\sEND\s*(\w+)?\s*;",         "to": ""},
+		{"from": "\bDECLARE\s+(CONTINUE|EXIT\s+HANDLER)\s.*?;",                                      "to": ""},
+
+		// {"from": "([^\n]+)\s*(GLOBAL\s+TEMPORARY|MULTISET\s+VOLATILE|VOLATILE|SET)(\s+TABLE.*)\b", "statement_categories": ["TABLE_DDL"],
+		// {"from": "\b(CREATE)\s+(SET\s+GLOBAL\s+TEMPORARY|GLOBAL\s+TEMPORARY|MULTISET\s+VOLATILE|VOLATILE|SET)(\s+TABLE.*)\b", "statement_categories": ["TABLE_DDL"],
+		   // "to": "-- FIXME databricks.migration.unsupported.feature Teradata '$2' Table type\n$1$3"},
+		{"from": "(^|\n)\s*(CREATE)\s+(SET\s+GLOBAL\s+TEMPORARY|GLOBAL\s+TEMPORARY|MULTISET\s+VOLATILE|VOLATILE|SET)(\s+TABLE.*)\b", "statement_categories": ["TABLE_DDL"],
+		   "to": "\n-- FIXME databricks.migration.unsupported.feature Teradata '$3' Table type\n$2$4"},
+
+		//////// Moved below MLOAD check
+		// // BTEQ IMPORT / EXPORT
+		// {"from": "(^|\n)\s*\.IMPORT\s.*?;", "to": "\n__BTEQ_IMPORT_PLACEHOLDER__\n;"},
+		// {"from": "((^|\n)\s*\.EXPORT\s+(?:reportwide\s+|DATA\s+)?FILE\s*=\s*(\S+|['\"].*?['\"])\s*);", "to": "$1"},    // Remove potential ";" on .EXPORT statement
+		// {"from": "(^|\n)\s*\.EXPORT\s.*?(;|$)", "to": "\n__BTEQ_EXPORT_PLACEHOLDER__\n;"},
+
+		// These were moved from "suppress_lines_starting_with", in order to do the changes before fragmentation, or because no semil-colon
+		{"from": "(^|\n)\s*\.PACK\b.*?\n", "to": "\n"},
+		{"from": "(^|\n)\s*\.SHOW\b.*?\n", "to": "\n"},
+		{"from": "(^|\n)\s*\.SESSIONS\b.*?\n", "to": "\n"},
+
+		// {"from": "(^|\n)\.QUIT[^\n]*",                               "to": "$1"},
+		{"from": "(^|\n)\.SET\b[^\n]*",                              "to": "$1"},
+		// {"from": "(^|\n)\.EXIT\b[^\n]*",                             "to": "$1"},
+		// {"from": "(^|\n)\.RUN\s*FILE\b[^\n]*",                       "to": "$1"},
+		// {"from": "(^|\n)\.IF\s+ERRORCODE\b[^\n]*",                   "to": "$1"},
+		{"from": "(^|\n)SHOW\s+TABLE\s[^\n]*",                       "to": "$1"},
+
+		// Add a ";" after .LABEL ... statements
+		{"from": "(^|\n)\s*\.LABEL\s+(\w+).*?\n", "to": "\n<:nowrap:><:label:> $2;\n"},
+
+		// Add a ";" after unconditional .EXIT / .QUIT statements
+		{"from": "(^|\n)\s*\.(QUIT|EXIT) *(\w+).*?\n", "to": "\n.BB_$2_WITH_VAL $3;\n"},          // DO NOT CHANGE THE " " to \s+ !!!
+		{"from": "(^|\n)\s*\.((QUIT|EXIT)).*?(\n|$)",  "to": "\n.BB_$2_WITHOUT_VAL;\n"},
+
+		{"from": "(^|\n)\s*\.LOG(ON|OFF|TABLE|MECH)\b.*?(\n|$)", "to": "\n"},
+
+		// See if these can be moved back to line_subst
+		// {"from": "CREATE\s+SET\s+TABLE",                             "to": "CREATE TABLE IF NOT EXISTS"},
+		{"from": "\bNO\s+(BEFORE|AFTER)\s+JOURNAL\s*,*\s*",          "to": ""},
+		{"from": "(,)?[^\n]*NO\s+LOG",                               "to": ""},
+		{"from": "(,)?[^\n]*CHECKSUM\s*=\s*DEFAULT(,)?",             "to": ""},
+		// {"from": "\bNO\s+PRIMARY\s+INDEX\b",                         "to": ""},
+		// {"from": "\bUNIQUE\s+INDEX\s+\(.*?\)",                       "to": ""},
+		// {"from": "\bUNIQUE\s+INDEX\b",                               "to": ""},
+
+		// Note: these can cross multiple lines
+		// {"from": "\b(UNIQUE\s+)?PRIMARY\s+INDEX(\s+\w+)?\s*\(.*?\)", "to": ""},
+
+		// {"from" : "\.BEGIN\s+IMPORT\s+MLOAD.*\.END\s+MLOAD;", "to" : "__MLOAD_PLACEHOLDER__;"},
+		{"from" : "\.BEGIN\s+EXPORT\b.*?\.END\s+EXPORT\s*;", "to" : "__FastExport_PLACEHOLDER__;"},
+
+////////////////////////
+// Need to allow other layouts:
+// DEFINE...BEGIN LOADING
+		// {"from" : "\bBEGIN\s+LOADING\b.*\bEND\s+LOADING\b.*?;", "to" : "__FastLoad_PLACEHOLDER__;"},
+
+		{"from" : "\bDEFINE\b.*?\bBEGIN\s+LOADING\b.*?\bEND\s+LOADING\b.*?;", "to" : "__FastLoad_PLACEHOLDER__;"},
+		{"from" : "\bBEGIN\s+LOADING\b.*?\bDEFINE\b.*?\bEND\s+LOADING\b.*?;", "to" : "__FastLoad_PLACEHOLDER__;"},
+
+		// "END LOADING" not always present
+		{"from" : "\bDEFINE\b.*?\bBEGIN\s+LOADING\b.*", "to" : "__FastLoad_PLACEHOLDER__;"},
+		{"from" : "\bBEGIN\s+LOADING\b.*?\bDEFINE\b.*", "to" : "__FastLoad_PLACEHOLDER__;"},
+
+////////////////////////
+
+		{"from" : "\bBEGIN\s+(IMPORT\s+)?MLOAD\b.*\bEND\s+MLOAD\b.*?;",     "to" : "__MLoad_PLACEHOLDER__;"},
+
+		////////// Moved this here because it needs to be after MLOAD, otherwise MLOAD's .IMPORT gets picked up as a BTEQ .IMPORT
+		// BTEQ IMPORT / EXPORT
+		{"from": "(^|\n)\s*\.IMPORT\s.*?;", "to": "\n__BTEQ_IMPORT_PLACEHOLDER__\n;"},
+		{"from": "((^|\n)\s*\.EXPORT\s+(?:reportwide\s+|DATA\s+)?FILE\s*=\s*(\S+|['\"].*?['\"])\s*);", "to": "$1"},    // Remove potential ";" on .EXPORT statement
+		{"from": "(^|\n)\s*\.EXPORT\s.*?(;|$)", "to": "\n__BTEQ_EXPORT_PLACEHOLDER__\n;"},
+
+
+
+		{"from" : "\.BEGIN\s+LOAD\b.*\.END\s+LOAD\s*;", "to" : "__Tpump_PLACEHOLDER__;"},
+		// {"from" : "(\.IMPORT\s+DATA\s+(FILE|DDNAME)\s*=\s*\S+);", "to" : "$1 !!!"}, // Remove semi-colon. Makes IMPORT...USING...; all one statement for handling later
+
+		// For REMARK
+		{"from": "''",                   "to": "<:two_single_quotes:>"},
+		{"from": "\.REMARK\s+'(.*?)'",   "to": "<:nowrap:><:python_print:>(\"$1\");"},   // REMARK '...'
+		{"from": "\.REMARK\s+\"(.*?)\"", "to": "<:nowrap:><:python_print:>(\"$1\");"},   // REMARK "..."
+
+		// .RUN FILE... with or without quotes around file name
+		{"from": "\.RUN\s+FILE\s*=?\s*['\"](.*?)['\"]", 
+		   "to": "<:nowrap:># FIXME databricks.migration.task update '$1' to required converted notebook path\ndbutils.notebook.run(\"$1\");"},
+		{"from": "\.RUN\s+FILE\s*=?\s*([^\s;]+)", 
+		   "to": "<:nowrap:># FIXME databricks.migration.task update '$1' to required converted notebook path\ndbutils.notebook.run(\"$1\");"},
+
+		//------ BTEQ .IF / .ELSEIF / .ELSE / .ENDIF
+		// Add semi-colon to .IF ...
+		{"from": "(^|\n)\s*\.IF(\s+.*?)\n", "to": "\n<:if:>$2;\n"},
+
+		// Add semi-colon to .ELSEIF ...
+		{"from": "(^|\n)\s*\.ELSEIF(\s+.*?)\n", "to": "\n<:elseif:>$2;\n"},
+
+		// Add semi-colon to .ELSE ...
+		{"from": "(^|\n)\s*\.ELSE.*?\n", "to": "\n<:else:>;\n"},
+
+		// Add semi-colon to .ENDIF 
+		{"from": "(^|\n)\s*\.ENDIF.*?\n", "to": "\n<:endif:>;\n"},
+
+		{"from": "<:if:>", "to": ".IF"},
+		{"from": "<:elseif:>", "to": ".ELSEIF"},
+		{"from": "<:else:>", "to": ".ELSE"},
+		{"from": "<:endif:>", "to": ".ENDIF"},
+
+		// Change IF ... THEN to IFTHEN ... so that we can differentiate from just IF
+		{"from": "\.IF(\s+[^\n]+\s+THEN\s)", "to": ".IF_THEN$1"},
+
+		//------ Stored Procedures IF / ELSEIF / ELSE / END IF
+		// Add semi-colon to .IF ...
+		{"from": "(^|\n)\s*IF(\s+.*?)\n", "to": "\n--s_p_i_f\n<:spif:>$2;\n"},
+
+		// Add semi-colon to .ELSEIF ...
+		{"from": "(^|\n)\s*ELSEIF(\s+.*?)\n", "to": "\n<:spelseif:>$2;\n"},
+
+		// Add semi-colon to .ENDIF 
+		{"from": "(^|\n)\s*END\s+IF.*?\n", "to": "\n--s_p_e_n_d_i_f\n<:spendif:>;\n"},
+		{"from": "<:spendif:>", "to": "spENDIF"},
+
+		// Hide ELSE in an UPDATE WHERE...
+		{"from": "(WHERE\s[^;]+)ELSE\b", "to": "$1<:hide:>"},
+
+		// Hide ELSE in a CASE...
+		{"from": "\bELSE([^;]+;\s*END)\b", "to": "<:hide:>$1"},
+		{"from": "\bELSE([^;]+\s*END)\b",  "to": "<:hide:>$1"},
+
+		// Add semi-colon to .ELSE ...
+		{"from": "(^|\n)\s*ELSE.*?\n", "to": "\n<:spelse:>;\n"},
+		{"from": "<:hide:>", "to": "ELSE"},
+
+		{"from": "<:spif:>", "to": "spIF"},
+		{"from": "<:spelseif:>", "to": "spELSEIF"},
+		{"from": "<:spelse:>", "to": "spELSE"},
+
+		// Change IF ... THEN to IFTHEN ... so that we can differentiate from just IF
+		{"from": "spIF(\s+[^\n]+\s+THEN\b)", "to": "spIF_THEN$1"},
+
+		// BTEQ comment
+		// {"from": "^(\s*)\*", "to": "$1#"},
+
+		//
+		{"from": "\b(CREATE|REPLACE)\s+MACRO\s.*?\sAS\s*(\(((?:(?>[^()]+)|(?2))*)\))", "to": "__CREATE_MACRO_PLACEHOLDER__"},
+
+		//Mask out "DECLARE" before going through SQLParser big loop
+		{"from": "DECLARE", "to": "D_E_C_L_A_R_E"},
+
+		//---------------------------- Example of coding a PLACEHOLDER
+		// VITALLY IMPORTANT!!!: 
+		//   1. ALWAYS INCLUDE THE ";" , e.g. "__xxxx_PLACEHOLDER__;"
+		//   2. The "from" cannot be repeated in the "to". So DO NOT code this: 
+		//         {"from": "SOMEFUNC.*?:", "to": "__SOMEFUNC_PLACEHOLDER__"    // BAD: "SOMEFUNC" in from and to
+		//      Instead code this:
+		//         {"from": "SOMEFUNC.*?:", "to": "__SOME_FUNC_PLACEHOLDER__"   // Good: "SOMEFUNC" in from, "SOME_FUNC" in to
+		{"from": "testthing1.*?;", "to": "__TEST_THING1_PLACEHOLDER__;"}, // Use this same pattern to match / save in: "source_prescan_routine" : "::teradata_prescan"
+
+		{"from": "xxxxxxxxxxxxxxxxxxx", "to" : "xxxxxxxxxxxxxxxxxxx"}
+	],
+
+	// "suppress_lines_starting_with": ["\.IF\s+ERRORCODE", "\.RUN\s*FILE\b", "\.SET\b", "\.EXIT\b", "\.LOG(ON|OFF|TABLE)\b", "SHOW\s+TABLE\s"],
+	"suppress_lines_starting_with": ["\.SET\b", "\.LOG(ON|OFF|TABLE)\b", "SHOW\s+TABLE\s"],
+	// "suppress_lines_containing": [".quit"],
+	"suppress_lines_containing": ["Causes error if removed, so this must not match anything"],
+	"line_suppression_behavior":"ELIMINATE" //choices: COMMENT or ELIMINATE
+	,
+
+	"line_subst" : [
+		
+		{"from" : ",(.*?)NO\s+FALLBACK\s*,\s*", "to": ""},
+		{"from" : ",(.*?)NO\s+FALLBACK\s*", "to": ""},
+		{"from" : "(.*?)NO\s+FALLBACK\s*", "to": ""},
+		{"from" : ",(.*?)FALLBACK\s*,\s*", "to": ""},
+		{"from" : ",(.*?)FALLBACK\s*", "to": ""},
+		{"from" : "DEFAULT(\s+)MERGEBLOCKRATIO", "to" : "$1"},
+		{"from" : "LOCKING\s+ROW\s+FOR\s+ACCESS\s*", "to" : ""},
+		{"from" : "^(\s*?)REPLACE(\s+?)VIEW", "to": "ALTER VIEW"},
+		{"from" : "MAP =\s+[^\s,\n]+", "to": ""},	
+
+		//
+		{"from": "D_E_C_L_A_R_E", "to": "DECLARE"},
+
+		{"from" : "__TEST_THING1_PLACEHOLDER__", "extension_call" : "::databricks_testthing1"},
+
+		{"from" : "^\s*\.EXPORT\s+RESET", "to" : "--.EXPORT RESET"},
+
+		{"from": "\bCHARACTER\s+SET\s+\w+",   "to": ""},
+		{"from": "\bTIMESTAMP\s*\(.*?\)",     "to": "TIMESTAMP"}, // Removed stmt categ to capture SELECT...TIMESTAMP(...) , "statement_categories": ["TABLE_DDL"]},
+		{"from": "\bTIME\s*\(.*?\)",          "to": "TIMESTAMP"}, // Removed stmt categ to capture SELECT...TIMESTAMP(...) , "statement_categories": ["TABLE_DDL"]},
+		{"from": "\bCHARACTER_LENGTH\b",      "to": "LENGTH"},
+		{"from": "^\s*END\b.*",               "to": ""},
+
+		// Added 20220111
+		// MULTISET TABLE
+		{"from": "\b(CREATE|REPLACE)\s+MULTISET\s+TABLE",                     "to": "$1 TABLE",  "statement_categories": ["TABLE_DDL"]},
+
+		// For table types: SET, GLOBAL TEMPORARY, and MULTISET VOLATILE
+		// {"from": "([^\n]+)\s*(SET|GLOBAL\s+TEMPORARY|MULTISET\s+VOLATILE|VOLATILE)(\s+TABLE.*)\b", "statement_categories": ["TABLE_DDL"],
+		//    "to": "-- FIXME databricks.migration.unsupported.feature Teradata '$2' Table type\n$1$3"},
+
+		// Table attributes to ignore
+		{"from": "\s(NO\s+)?FALLBACK(\s+PROTECTION)?",                        "to": " ",         "statement_categories": ["TABLE_DDL"]},
+		{"from": "\sWITH\s+JOURNAL\s+TABLE\s*=\s*[\w.]",                      "to": " ",         "statement_categories": ["TABLE_DDL"]},
+		{"from": "\s(NO\s+)?LOG\b",                                           "to": " ",         "statement_categories": ["TABLE_DDL"]},
+		{"from": "\s(NO\s+|DUAL\s+)?(BEFORE\s+)?JOURNAL",                     "to": " ",         "statement_categories": ["TABLE_DDL"]},
+		{"from": "\s(NO\s+|DUAL\s+|NOT\s+LOCAL\s+|LOCAL\s+)?AFTER\s+JOURNAL", "to": " ",         "statement_categories": ["TABLE_DDL"]},
+
+		// NOT / CASESPECIFIC / CS
+		{"from": "([^\n]+)\sNOT\s+CASESPECIFIC\b",                                               "statement_categories": ["TABLE_DDL"],
+		   "to": "\n-- FIXME databricks.migration.unsupported.feature Teradata '<<xxNT_CSSPCxx>>' Column attribute: $1\n$1"},
+		{"from": "([^\n]+)\sNOT\s+CS\b",                                                         "statement_categories": ["TABLE_DDL"],
+		   "to": "\n-- FIXME databricks.migration.unsupported.feature Teradata '<<xxNT_C_Sxx>>' Column attribute: $1 \n$1"},
+		{"from": "([^\n]+)\sCASESPECIFIC\b",                                                     "statement_categories": ["TABLE_DDL"],
+		   "to": " $1 "},
+		{"from": "([^\n]+)\sCS\b",                                                               "statement_categories": ["TABLE_DDL"],
+		   "to": " $1 "},
+		{"from": "<<xxNT_CSSPCxx>>",    "to": "NOT CASESPECIFIC"},
+		{"from": "<<xxNT_C_Sxx>>",      "to": "NOT CS"},
+
+		// Data type changes
+		{"from": "\s(BYTE|VARBYTE|BLOB)\b\s*(\([0-9]*(K|M|G)?\))?",   "to": " BINARY",          "statement_categories": ["TABLE_DDL"]},
+		{"from": "\sBYTEINT\b",                                       "to": " BYTE",            "statement_categories": ["TABLE_DDL"]},
+		{"from": "\s(LONG\s+VARCHAR|CLOB)\b\s*(\([0-9]*(K|M|G)?\))?", "to": " STRING",          "statement_categories": ["TABLE_DDL"]},
+		{"from": "\sDOUBLE\s+PRECISION\b",                            "to": " DOUBLE",          "statement_categories": ["TABLE_DDL"]},
+		{"from": "\s(CHAR(ACTER)?)\b\s*(?=[^(])",                     "to": " CHAR(1) ",        "statement_categories": ["TABLE_DDL"]},
+		// {"from": "\b(TIME(STAMP)?)\b\s*(\(.*?\))?",                   "to": " <<xxTmstmpxx>> ", "statement_categories": ["TABLE_DDL"]},
+
+		// FORMAT, e.g. FORMAT 'ZZ9'
+		{"from": "\sFORMAT\s'.*?'",                                   "to": " ",                "statement_categories": ["TABLE_DDL"]},
+
+		// TITLE column attribute
+		{"from": "\sTITLE\s'.*?'",                                    "to": " ",                "statement_categories": ["TABLE_DDL"]},
+
+		{"from" : " MOD ", "to":" % "},
+
+		// Concatenator
+		{"from": "\|\|", "to": "+"},
+
+		// {"from" : "<<xxTmstmpxx>>", "to" : "TIMESTAMP"},
+
+		// Special handlers for Teradata utilities
+		{"from" : "__FastExport_PLACEHOLDER__", "extension_call" : "::databricks_insert_overwrite"},
+		{"from" : "__FastLoad_PLACEHOLDER__",   "extension_call" : "::databricks_copy_into"},
+		{"from" : "__MLoad_PLACEHOLDER__",      "extension_call" : "::databricks_merge_into"},
+
+		{"from" : "__CREATE_MACRO_PLACEHOLDER__", "extension_call" : "::databricks_create_macro"},
+
+		// Macro execution
+		{"from": "^\s*EXEC\s", "to": "%python\n# FIXME: databricks.migrations.task Teradata Macros - include the requried \"create macro\" converted notebook.\n"},
+
+		{"from" : "xxxxxxxxxxxxxxxxxxx", "to" : "xxxxxxxxxxxxxxxxxxx"}
+	],
+	
+	"block_subst" : [
+
+		//------ BTEQ .IF / .ELSEIF / .ELSE / .ENDIF
+		// .IF ... THEN .EXIT
+		// {"from": "\.IF_THEN\s+(\w+)\s*(\S+)\s*(\S+)\s+THEN\s+\.EXIT\s+(\w+)\s*;", "to": "<:nowrap:>if xSqlState.$1 $2 $3:\n--<indent++>\ndbutils.notebook.exit(xSqlState.$1)\n--<indent-->"},
+		{"from": "\.IF_THEN\s+(\w+)\s*(\S+)\s*(\S+)\s+THEN\s+\.EXIT\s+(\w+)\s*;", "to": "<:nowrap:>if $1 $2 $3:\n--<indent++>\ndbutils.notebook.exit($1)\n--<indent-->"},
+
+		// .IF ... <op> 0 THEN GOTO <label>
+		// {"from": "\.IF_THEN\s+(\w+)\s*(=|<>|!=|~=|\^=)\s*0+\s+THEN\s+\.GOTO\s+(\w+)\s*;", "to": "<:nowrap:>if not xSqlState.$1 $2 0:\n--<indent++> GOTO $3"},
+		{"from": "\.IF_THEN\s+(\w+)\s*(=|<>|!=|~=|\^=|>|<)\s*0+\s+THEN\s+\.GOTO\s+(\w+)\s*;", "to": "<:nowrap:>if not $1 $2 0:\n--<indent++> GOTO $3"},
+
+		// {"from": "\.LABEL\b", "to": "--endindent"},
+		{"from": "<:label:>", "to": "--<indent=0>"},
+
+		// .IF (without THEN)
+		{"from": "\.IF(\s+.*?)\s*;",      "to": "<:nowrap:>if$1:\n--<indent++>\n"},
+
+		// .ELSEIF
+		{"from": "\.ELSEIF(\s+.*?)\s*;",  "to": "<:nowrap:>\n--<indent-->\nelif$1:\n--<indent++>\n"},
+
+		// .ELSE 
+		{"from": "\.ELSE\b.*;",           "to": "<:nowrap:>\n--<indent-->\nelse:\n--<indent++>\n"},
+
+		// .ENDIF 
+		{"from": "\.ENDIF\b.*;",          "to": "<:nowrap:>\n--<indent-->\n"},
+
+		//------ Stored Procedures IF / ELSEIF / ELSE / END IF
+		{"from": "spIF_THEN\s+(.*?)\s+THEN\s*;", "to": "<:nowrap:>if $1:\n--<indent++>\n"},
+
+		// ELSEIF
+		{"from": "spELSEIF(\s+.*?)\s*;",  "to": "<:nowrap:>\n--<indent-->\nelif$1:\n--<indent++>\n"},
+
+		// ELSE 
+		{"from": "spELSE\b.*;",           "to": "<:nowrap:>\n--<indent-->\nelse:\n--<indent++>\n"},
+
+		// ENDIF 
+		{"from": "spENDIF\b.*;",          "to": "<:nowrap:>\n--<indent-->\n"},
+
+		// Unconditional .QUIT / .EXIT
+		// {"from": "(^|\n)\s*\.(BB_QUIT|BB_EXIT)_WITH_VAL\s*(\w+)\s*(;)?", "to": "<:nowrap:>dbutils.notebook.exit(xSqlState.$3)"},
+		{"from": "(^|\n)\s*\.(BB_QUIT|BB_EXIT)_WITH_VAL\s*(\w+)\s*(;)?", "to": "<:nowrap:>dbutils.notebook.exit($3)"},
+		{"from": "(^|\n)\s*\.(BB_QUIT|BB_EXIT)_WITHOUT_VAL",             "to": "<:nowrap:>dbutils.notebook.exit()"},
+		// {"from": "testlabel", "to": "dbutils.notebook.exit(999)"},
+
+/////////////////////////////// Added back in
+		// "CONSTRAINT <word> PRIMARY KEY (" -- NOTE: We match on the "(", so need to add it back in the "to"
+		{"from": "\bCONSTRAINT\s+\w+\s+PRIMARY\s+KEY\s*\(",                         "to": "BB_CONSTRAINT_PRIMARY_KEY_PARENS (", "statement_categories": ["TABLE_DDL"]},
+
+		// "CONSTRAINT <word> PRIMARY KEY" (no paren, because we already handle that above) -- NOTE: need to add " ()" in order to match in function_subst
+		{"from": "\bCONSTRAINT\s+\w+\s+PRIMARY\s+KEY",                              "to": "BB_CONSTRAINT_PRIMARY_KEY ()",       "statement_categories": ["TABLE_DDL"]},
+
+		// Same thing as PRIMARY KEY for FOREIGN KEY
+		{"from": "\bCONSTRAINT\s+\w+\s+FOREIGN\s+KEY\s*\(.*?\)\s+REFERENCES\s+\w+", "to": "BB_CONSTRAINT_FOREIGN_KEY_REFS",     "statement_categories": ["TABLE_DDL"]},
+
+		// Same thing as PRIMARY KEY for REFERENCES
+		{"from": "\bCONSTRAINT\s+\w+\s+REFERENCES\s+\w+\s*\(",                      "to": "BB_CONSTRAINT_REFS_PARENS (",        "statement_categories": ["TABLE_DDL"]},
+		{"from": "\bCONSTRAINT\s+\w+\s+REFERENCES\s+\w+",                           "to": "BB_CONSTRAINT_REFS ()",              "statement_categories": ["TABLE_DDL"]},
+
+		// For leftover "REFERENCES <word> ("  and "REFERENCES <word>"
+		{"from": "\bREFERENCES\s+\w+\s*\(",                                         "to": "BB_REFS_PARENS (",                   "statement_categories": ["TABLE_DDL"]},
+		{"from": "\bREFERENCES\s+\w+",                                              "to": "BB_REFS ()",                         "statement_categories": ["TABLE_DDL"]},
+
+		// For leftover "FOREIGN KEY ("
+		{"from": "\bFOREIGN\s+KEY\s*\(",                                            "to": "BB_FOREIGN_KEY_PARENS (",            "statement_categories": ["TABLE_DDL"]},
+
+		// {"from": "\bDECLARE\s+CONTINUE\s",       "to": "BB_DECLARE_CONTINUE "},
+		// {"from": "\bDECLARE(\s+\w+\s+)CURSOR\s", "to": "BB_DECLARE_$1_CURSOR "},
+		{"from": "\b(DECLARE\s+\w+\s+CURSOR\s.*);", "to": "\n-- FIXME databricks.migration.unsupported.feature 'BB_DECLARE_CURSOR'\n $1 $2\n", "first_match": "1"},
+		{"from": "(^|\n)\s*(OPEN\s+\w+.*)",      "to": "\n-- FIXME databricks.migration.unsupported.feature 'BB_OPEN_CURSOR'\n $2 \n", "first_match": "1"},
+		// {"from": "(^|\n)\s*(PREPARE\s+\w+.*)",   "to": "\n/* FIXME databricks.migration.unsupported.feature 'BB_PREPARE'\n $2 \n*/", "first_match": "1"},
+		{"from": "(^|\n)\s*(PREPARE\s+\w+.*)",   "to": "\n-- FIXME databricks.migration.unsupported.feature 'BB_PREPARE_CURSOR'\n $2 \n", "first_match": "1"},
+		{"from": "(^|\n)\s*(FETCH\s+\w+.*)",     "to": "\n-- FIXME databricks.migration.unsupported.feature 'BB_FETCH_CURSOR'\n $2 \n", "first_match": "1"},
+		{"from": "(^|\n)\s*(CLOSE\s+\w+.*)",     "to": "\n-- FIXME databricks.migration.unsupported.feature 'BB_CLOSE_CURSOR'\n $2 \n", "first_match": "1"},
+
+		{"from": "\bDECLARE\s.*?;",              "to": "BB_DECLARE_VAR" },
+
+		{"from": "BB_OPEN_CURSOR",               "to": "OPEN [cursor]" },
+		{"from": "BB_PREPARE_CURSOR",            "to": "PREPARE [cursor]" },
+		{"from": "BB_FETCH_CURSOR",              "to": "FETCH [cursor]" },
+		{"from": "BB_CLOSE_CURSOR",              "to": "CLOSE [cursor]" },
+		{"from": "BB_DECLARE_CURSOR",            "to": "DECLARE [cursor] CURSOR" },
+
+		// {"from": "(^|\n)\s*(BB_DECLARE_CONTINUE.*)",  "to": "\n/* FIXME databricks.migration.unsupported.feature 'DECLARE CONTINUE'\n $2 \n*/", "first_match": "1"},
+		// {"from": "(^|\n)\s*(BB_DECLARE_(.*?)_CURSOR.*)",    "to": "\n/* FIXME databricks.migration.unsupported.feature 'DECLARE CURSOR'\n $2 \n*/", "first_match": "1"},
+
+		// Change the .IMPORT... that we modified previously in preprocess_subst
+		{"from" : "^\s*\.IMPORT\s+DATA\s+(?:FILE|DDNAME)\s*=\s*(.*?)\s+!!!\s+USING\s+(\(.*\)).*?\b((INSERT|UPDATE).*?\))\s*(VALUES\s+.*?\))?", 
+		   "to" : "DROP TABLE IF EXISTS EXT1;\nCREATE TEMPORARY EXTERNAL TABLE EXT1\n$2\nROW FORMAT DELIMITED\nFIELDS TERMINATED BY ','\nSTORED AS TEXTFILE\nLOCATION $1\n$3\nSELECT * FROM EXT1;"},
+
+		// {"from": "^\s*\.EXPORT\s+(?:reportwide|DATA)\s+FILE\s*=\s*(\S+)(.*?)($|;)" , "extension_call" : "::convert_bteq_export"},
+
+		{"from" : "COLLECT\s+(?:STATS|STATISTICS)(?:\s+ON)?\s+(\S+|\S+\s+\.\S+|\S+\.\s+\S+)\s+(INDEX|COLUMN)\s*.*?([^();]+).*", "to" : "ANALYZE TABLE $1 COMPUTE STATISTICS FOR COLUMNS $3;"},
+
+		{"from": "WITH\s+NO\s+CHECK\s+OPTION\s+(\w+\s*\(.*?\))", "to": " $1 NOT ENFORCED " },
+		{"from": "WITH\s+NO\s+CHECK\s+OPTION", "to": " " },
+
+		// Comment out CONSTRAINT...UNIQUE with a "FIXME" tag
+		{"from": "\bCONSTRAINT(\s+\w+\s+)UNIQUE(\s*\(.*?\))",  "statement_categories": ["TABLE_DDL"],
+		   "to": "/* FIXME databricks.migration.unsupported.feature ' BB_UNIQ ' Constraint\n BB_CONSTR $1 BB_UNIQ $2 */\n" },
+
+		{"from": "\bCONSTRAINT(\s+\w+\s+)UNIQUE\b",            "statement_categories": ["TABLE_DDL"],
+		   "to": "/* FIXME databricks.migration.unsupported.feature ' BB_CONSTR constraint_name BB_UNIQ '\n BB_CONSTR $1 BB_UNIQ */\n" },
+
+		{"from": "\bCONSTRAINT\s+UNIQUE(\s*\(.*?\))",          "statement_categories": ["TABLE_DDL"],
+		   "to": "/* FIXME databricks.migration.unsupported.feature ' BB_UNIQ ' Constraint\n BB_CONSTR BB_UNIQ $1 */\n" },
+
+		{"from": "\bCONSTRAINT\s+\w+\s+CHECK\b",         "to": "BB_CONSTRAINT_CHECK ",    "statement_categories": ["TABLE_DDL"]},
+		{"from": "\bCHECK\b",                            "to": "BB_CHECK",                "statement_categories": ["TABLE_DDL"]},
+
+		{"from": "\b(NO\s+)?(UNIQUE\s+)?(PRIMARY\s+)?INDEX\s*\(.*?\)\s*,", "to": "BB_HANDLE_INDEX ()", "statement_categories": ["TABLE_DDL"]},
+		{"from": "\b(NO\s+)?(UNIQUE\s+)?(PRIMARY\s+)?INDEX",               "to": "BB_HANDLE_INDEX",    "statement_categories": ["TABLE_DDL"]},
+
+		{"from": "\bUNIQUE\s*\(.*?\)",                                 "statement_categories": ["TABLE_DDL"],              
+		   "to": "/* FIXME databricks.migration.unsupported.feature ' BB_UNIQ ' Constraint\n */ " },
+
+		{"from" : "^\s*\/\*", "extension_call" : "::convert_comment"},
+
+		{"from": "\sBETWEEN\s+\S+\s+AND\s+[^,\s]+",                         "to": " ",     "statement_categories": ["TABLE_DDL"]},
+		{"from": "\sUPPERCASE\b",                                           "to": " ",     "statement_categories": ["TABLE_DDL"]},
+		{"from": "\bDATABASE\s",                                            "to": "USE "},
+
+		// In "(START WITH...)", remove CYCLE / NO CYCLE / MIN VALUE / MAX VALUE, and change INT to BIGINT
+		{"relative_fragment_offset": ["1"], "relative_fragment_pattern": "\s*CREATE\s+TABLE.*?\(.*?START\s+WITH.*?\)",
+		 "from": "\b((NO\s+)?CYCLE|(MIN|MAX)VALUE\s+[0-9]+)", "to": ""},
+		{"relative_fragment_offset": ["1"], "relative_fragment_pattern": "\s*CREATE\s+TABLE.*?\(.*?START\s+WITH.*?\)",
+		 "from": "\bINT\b", "to": "BIGINT"},
+
+		// Put "CONSTRAINT" and "UNIQUE" keywords back
+		{"from": "BB_CONSTR ",               "to": " CONSTRAINT "},
+		{"from": "BB_UNIQ ",                 "to": " UNIQUE "},
+		{"from": "BB_DECLARE_(.*?)_CURSOR ", "to": " DECLARE $1 CURSOR "},
+		// {"from": "BB_DECLARE_CONTINUE ",     "to": " DECLARE CONTINUE "},
+		{"from": "BB_DECLARE_VAR.*?",        "to": " "},
+
+		// // This matches ", /*...*/ )" (a comma followed by a "/*...*/" comment, followed by a right paren, removing the comma
+		// {"from": ",(\s*\/\*.*?\*\/\s*\))", "to": "$1"},
+
+		// Convert things like "<expression> (FORMAT ..." to "date_format (<expression>, ...". NOTE: "BB_FORMAT" added to make 
+		// global_substitutions kick in (we will match the BB_FORMAT in order to do the format change, then remove "BB_FORMAT")
+		{"from": "__EXPRESSION__\s*\(\s*format\b", "to": "date_format ( __EXPRESSION__ , BB_FORMAT "},
+		// {"from": "__EXPRESSION__\s*AS\s*format\b", "to": "date_format  __EXPRESSION__ , BB_FORMAT "},  // Need to handle "CAST(... AS FORMAT..."
+
+		{"from": "\*\*", "extension_call" : "::convert_exponent"},
+
+		// Convert comparison operators
+		{"from": "(ACTIVITYCOUNT|BTEQRETURNCODE|DELETECOUNT|ERRORCODE|ERRORLEVEL|INSERTCOUNT|UPDATECOUNT|WARNINGCODE|SYSTEMRETURNCODE)\s*(<>|~=\^=)",
+		   "to": "$1 !="},
+		{"from": "(ACTIVITYCOUNT|BTEQRETURNCODE|DELETECOUNT|ERRORCODE|ERRORLEVEL|INSERTCOUNT|UPDATECOUNT|WARNINGCODE|SYSTEMRETURNCODE)\s*=([^=])",
+		   "to": "$1 ==$2"},
+
+		{"from": "\bERRORCODE\b",     "to": "xSqlState.ERROR_CODE"},
+		{"from": "\bACTIVITYCOUNT\b", "to": "xSqlState.NUM_AFFECTED_ROWS"},
+		{"from": "\bDELETECOUNT\b",   "to": "xSqlState.NUM_DELETED_ROWS"},
+		{"from": "\bINSERTCOUNT\b",   "to": "xSqlState.NUM_INSERTED_ROWS"},
+		{"from": "\bUPDATECOUNT\b",   "to": "xSqlState.NUM_UPDATED_ROWS"},
+
+		{"from": "\bSAMPLE\s+([1-9][0-9]*)(\s*,\s*[1-9][0-9]*)*",   "to": "TABLESAMPLE ($1 ROWS)"},              // For SAMPLE <integer> [,<integer>...]
+
+		{"from": "\bSAMPLE\s+((0)?\.[0-9]+)(\s*,\s*(0)?\.[0-9]+)*", "to": "__SAMPLE_PERCENT_PLACEHOLDER__ "},    // For SAMPLE n.n [,n.n...]
+
+		// LOG... WITHOUT the preceding "."
+		{"from": "^\s*LOG(ON|OFF|TABLE|MECH)\b.*?(\n|$)", "to": "\n"},
+
+		// 
+		// {"from": "^(\s*\.REPEAT\s+[0-9]+.*?\n)", "to": "\n--FIXME Unsupported REPEAT value\n--$1"},
+
+		// SELECT... INTO... FROM
+		{"from": "\bSELECT.*?\sINTO.*?\sFROM\s.*;", "extension_call": "::databricks_select_into"},        // Want
+
+		// SET <variable> ...
+		{"from": "\bSET\s+(\w+\s*\=)", "extension_call": "::databricks_set_variable"},
+
+		// CALL a stored procedure
+		{"from": "\bCALL\s+.*;", "extension_call": "::databricks_notebook_run"},
+
+		// Remove EXECUTE IMMEDIATE, leaving just the name of whatever is being exectued
+		{"from": "\bEXECUTE\s+IMMEDIATE\b", "to": ""},
+
+		//
+		{"from": "create\s", "to": "<:create_start:>",   "statement_categories": ["CREATE_INDEX", "MATERIALIZED_VIEW_DDL"]},
+		{"from": "\n", "to": "<:linefeed_in_create:>--", "statement_categories": ["CREATE_INDEX", "MATERIALIZED_VIEW_DDL"]},
+
+		//
+		{"from": "<:create_start:>", 
+		"to": "\n-- BB_FIX_ME databricks.migrations.task review indexes to add required Z-Ordering or Bloom filter indexes\n-- CREATE "},
+		{"from": "<:linefeed_in_create:>--", "to": "\n-- "},
+
+		{"from": "xxxxxxxxxxxxxxxxxxx", "to" : "xxxxxxxxxxxxxxxxxxx"}
+	],
+
+	"global_substitutions" : [
+		// These are performed in the "pre_finalization_handler" routine, so almost at the very end of processing
+
+		// Date / time conversions. NOTE: (?-i) means case-SENSITIVE!
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)(h|m|s)",  "to": "$1:"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)M4",       "to": "$1MMMM"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)M3",       "to": "$1MMM"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)MI",       "to": "$1mm"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)D3",       "to": "$1ddd"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)Y4",       "to": "$1yyyy"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)E4",       "to": "$1EEEE"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)E3",       "to": "$1EEE"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)(B|b)",    "to": "$1 "}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)SD",       "to": "$1S."}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)(MI|HH)D", "to": "$1:"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)DD",       "to": "$1dd"}, // FORMAT '...' for "DD" (upper case), representing day of week
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)YY",       "to": "$1yy"}, // FORMAT '...' for "YY" (upper case), representing two-digit year
+		// {"from": "\b(?i)(FORMAT\s+'[^']*)(?-i)MM",       "to": "$1mm"}, // FORMAT '...' for "MM" (upper case), representing two-digit month
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)SS",       "to": "$1ss"}, // FORMAT '...' for "SS" (upper case), representing two-digit seconds
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)T",        "to": "$1a"},  // FORMAT '...' for "T"  (upper case), representing 12-hour time
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)D",        "to": "$1 "},  // FORMAT '...' for Radix character "D" (upper case)
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)S\(1\)",   "to": "$1S"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)S\(2\)",   "to": "$1SS"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)S\(3\)",   "to": "$1SSS"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)S\(4\)",   "to": "$1SSSS"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)S\(5\)",   "to": "$1SSSSS"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)S\(6\)",   "to": "$1SSSSSS"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)S\(F\)",   "to": "$1SSSSSS"}, 
+		{"from": "\b(?i)((BB_)?FORMAT\s+'[^']*)(?-i)S\(0\)",   "to": "$1 "},
+
+		{"from": "BB_FORMAT ", "to": ""},
+
+		//
+		{"from": "BB_FIX_ME", "to": "FIXME"},
+
+		// This matches ", /*...*/ )" (a comma followed by a "/*...*/" comment, followed by a right paren, removing the comma
+		{"from": ",(\s*\/\*.*?\*\/\s*\))", "to": "$1"},
+
+		// This matches ", /*...*/ ," (a comma followed by a "/*...*/" comment, followed by a second comma, removing the second comma
+		{"from": "(,\s*\/\*.*?\*\/\s*),", "to": "$1"},
+
+		{"from": "<:space:>", "to": " "},
+		
+		{"from": "\n$", "to": ""},         // Remove blank line at end of fragment
+		{"from": "\n\s*\n", "to": "\n"},    // Remove multi-blank-lines
+
+		// {"from": "xSqlState.ERRORCODE", "to": "xSqlState.ERROR_CODE"},  // No longer a straight convert; ERRORCODE becomes ERROR_CODE
+
+		{"from": "__SAMPLE_PERCENT_PLACEHOLDER__", "extension_call" : "::databricks_sample_percent"},
+
+		// For REMARK
+		{"from": "(<:python_print:>\(\"[^\"]*)<:two_single_quotes:>([^\"]*\"\))", "to": "$1'$2"},
+		{"from": "(<:python_print:>\(\"[^\"]*)\/\/\s*\n([^\"]*\"\))",             "to": "$1\\n$2\n<:/python_print:>"},  // For "//" at line end
+		{"from": "(<:python_print:>\(\"[^\"]*)\/\/([^\"]*\"\))",                  "to": "$1\\n$2\n<:/python_print:>"},  // For "//" between text
+        {"from": "(<:python_print:>\(\")([^\"]*)(\"\)\n<:/python_print:>)", "to": "$1\"\"$2\"\"$3"},   // Change " to """ for multi-line print
+        {"from": "\n<:/python_print:>",                                     "to": ""},
+		{"from": "<:python_print:>(.*?)",                                         "to": "print$1"},
+		{"from": "<:two_single_quotes:>}",                                        "to": "''"},
+
+		{"from": "(\(|,)(\s*)(\w+)([^\n]+\s+)\bWITH\s+TIME\s+ZONE\b(.*?\n)",
+		   "to": "$1\n--FIXME databricks.migration.unsupported.feature Teradata 'WITH TIME ZONE'  for TIME/TIMESTAMP column $3$2$3$4 $5"},
+
+		//
+		{"from": "\b(elif\b.*?)\s*\bTHEN", "to": "$1"},
+
+		{"from": "xxxxxxxxxxxxxxxxxxx", "to" : "xxxxxxxxxxxxxxxxxxx"}
+	],
+
+	"function_subst" : [
+/////////////////////////////////// Added back in
+		{"from": "BB_CONSTRAINT_PRIMARY_KEY_PARENS", "to": "__BLANK__"},
+		{"from": "BB_CONSTRAINT_PRIMARY_KEY",        "to": "__BLANK__"},
+		{"from": "BB_CONSTRAINT_FOREIGN_KEY_REFS",   "to": "__BLANK__"},
+		{"from": "BB_CONSTRAINT_REFS_PARENS",        "to": "__BLANK__"},
+		{"from": "BB_CONSTRAINT_REFS",               "to": "__BLANK__"},
+		{"from": "BB_REFS_PARENS",                   "to": "__BLANK__"},
+		{"from": "BB_REFS",                          "to": "__BLANK__"},
+		{"from": "BB_FOREIGN_KEY_PARENS",            "to": "__BLANK__"},
+///////////////////////////////////
+
+		{"from": "BB_CONSTRAINT_CHECK",                 "to": "__BLANK__"},
+		{"from": "BB_CHECK",                            "to": "__BLANK__"},
+
+		{"from": "BB_HANDLE_INDEX",                     "to": "__BLANK__"},
+
+		{"from": "INDEX",                            "output_template": "LOCATE($2,$1)", "statement_categories": ["READ_DML_INTO_VAR","WRITE_DML","READ_DML"]},
+		{"from": "INSTR",                            "output_template": "CHARINDEX($2,$1)",    "num_args" : "2"},
+		{"from": "INSTR",                            "output_template": "CHARINDEX($2,$1,$3)", "num_args" : "3"},
+		{"from": "INSTR",                            "output_template": "CHARINDEX($2,$1,$3)", "num_args" : "4"},
+
+		{"from": "STRTOK",                           "to" : "SPLIT"},
+		{"from": "ZEROIFNULL",                       "output_template": "COALESCE($1, 0)"},
+
+		{"from": "(\S+)\s+LIKE\s+ANY\s*\(\s*('.*?')\s*,\s*('.*?')\s*\)" , 
+		                                             "output_template" : "$1 LIKE $2 OR $1 LIKE $3"},               // For LIKE ANY(expr1, expr2)
+
+		{"from": "(\S+)\s+LIKE\s+ANY\s*\(\s*('.*?')\s*,\s*('.*?')\s*,\s*('.*?')\s*\)" , 
+		                                             "output_template" : "$1 LIKE $2 OR $1 LIKE $3 OR $1 LIKE $4"}, // For LIKE ANY(expr1, expr2, expr3)
+
+		{"from": "NULLIFZERO",                       "output_template" : "NULLIF($1, 0)"},
+		{"from": "TRUNC",                            "to": "date_trunc", "arg_placement": { "1":"2||'DD'", "2":"1" } },
+		{"from": "xxxxxxxxxxxxxxxxxxx", "to" : "xxxxxxxxxxxxxxxxxxx"}
+	],
+	
+	"stmt_categorization_patterns": [ // extend categories
+		{"category": "CREATE_INDEX",          "patterns" : ["\b(CREATE\s+(UNIQUE\s+|JOIN\s+)?INDEX\s.*?\s(ON|AS)\s.*?;)"]},
+		{"category": "MATERIALIZED_VIEW_DDL", "patterns" : ["CREATE\s+JOIN\s+INDEX","CREATE(\s?)MATERIALIZED(\s?)VIEW"]},
+
+		{"category": "VAR_SIMPLE_ASSIGNMENT", "patterns" : ["SET\s*(\w*)\s*\="]},
+		{"category": "PROC_DEF", "patterns" : ["__PROC_DEF_PLACEHOLDER__"]},
+		{"category": "BTEQ_IMPORT", "patterns" : ["__BTEQ_IMPORT_PLACEHOLDER__"]},
+		{"category": "BTEQ_EXPORT", "patterns" : ["__BTEQ_EXPORT_PLACEHOLDER__"]},
+		{"category": "PROC_BEGIN"           , "patterns" : ["BEGIN"]} 
+	],
+
+	"fragment_handling" : {
+		"__DEFAULT_HANDLER__" : "::databricks_default_handler",
+		"PROC_DEF"            : "::databricks_proc_arg_defs",
+		"BTEQ_IMPORT"         : "::databricks_copy_into",
+		"BTEQ_EXPORT"         : "::databricks_insert_overwrite",
+		"USE_DIRECTIVE"       : "::convert_dml",
+		"xxxxxxxxxxxxxxxxxxx" : "xxxxxxxxxxxxxxxxxxx"
+	}
+}

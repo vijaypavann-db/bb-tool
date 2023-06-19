@@ -1,0 +1,8 @@
+{
+	"inherit_from":["general_sql_specs.json"],
+	"CUSTOM_CONVERTER_MODULES" : ["!BB_CONFIG_CONVERTER!/databricks_output_hooks.pl"],
+	"prescan_and_collect_info_hook" : "::databricks_prescan_wrapper",
+	"initialize_hooks_call" : "::init_databricks_hooks",
+	"preprocess_file" : 1,
+	"preprocess_routine" : "::preprocess_for_databricks"
+}
