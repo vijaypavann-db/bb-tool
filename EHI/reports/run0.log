@@ -1,0 +1,316 @@
+
+Blade Bridge
+
+************ infa2any ************
+VERSION 2.5.4 Build 20220608
+***********************************
+
+Converter Info: LICENSEE => EHI
+Converter Info: EXPIRE_DATE => 20301231
+Converter Info: CODE_CONVERSION => CODE_CONVERSION_ENABLED
+Converter Info: TRUSTED_FLAG => N
+Validation::Validator [126]: 2023-06-21 11:39:49 Checksum count loaded: 10
+Loaded Modules:
+/tmp/p2xtmp-482378/perl2exe_bundle.txt
+Analyzer.pm
+Archive/Zip.pm
+Archive/Zip/Archive.pm
+Archive/Zip/DirectoryMember.pm
+Archive/Zip/FileMember.pm
+Archive/Zip/Member.pm
+Archive/Zip/NewFileMember.pm
+Archive/Zip/StringMember.pm
+Archive/Zip/ZipFileMember.pm
+AutoLoader.pm
+B.pm
+Carp.pm
+Carp/Clan.pm
+Carp/Heavy.pm
+Class/Struct.pm
+CodeConversion/CodeConvMain.pm
+CodeGeneration/CodeGenerator.pm
+CodeGeneration/Databricks.pm
+CodeGeneration/DatabricksJobs.pm
+CodeGeneration/PySpark.pm
+CodeGeneration/SQL.pm
+Common/MetaExchange.pm
+Common/MiscRoutines.pm
+Compress/Raw/Zlib.pm
+Config.pm
+Crypt/DES.pm
+Crypt/Lite.pm
+Crypt/RC4.pm
+Cwd.pm
+DBCatalog/DBBase.pm
+DBCatalog/SQLParser.pm
+DBConnectionJDBC.pm
+DWS/ExpressionTokens.pm
+DWSBase.pm
+DWSCrypt.pm
+DWSLanguage.pm
+DWSModulePacking.pm
+DWSValidation.pm
+Data/Dumper.pm
+Data/GUID.pm
+Data/OptList.pm
+Data/UUID.pm
+Date/Calc.pm
+Date/Calc/XS.pm
+Digest/MD5.pm
+Digest/Perl/MD5.pm
+Digest/base.pm
+DynaLoader.pm
+ETL/DBT.pm
+ETL/ETLBase.pm
+ETL/PowerCenter.pm
+Encode.pm
+Encode/Alias.pm
+Encode/Config.pm
+Encode/Encoding.pm
+Encode/Unicode.pm
+Errno.pm
+Excel/Writer/XLSX.pm
+Excel/Writer/XLSX/Chart.pm
+Excel/Writer/XLSX/Chartsheet.pm
+Excel/Writer/XLSX/Drawing.pm
+Excel/Writer/XLSX/Format.pm
+Excel/Writer/XLSX/Package/App.pm
+Excel/Writer/XLSX/Package/Comments.pm
+Excel/Writer/XLSX/Package/ContentTypes.pm
+Excel/Writer/XLSX/Package/Core.pm
+Excel/Writer/XLSX/Package/Packager.pm
+Excel/Writer/XLSX/Package/Relationships.pm
+Excel/Writer/XLSX/Package/SharedStrings.pm
+Excel/Writer/XLSX/Package/Styles.pm
+Excel/Writer/XLSX/Package/Table.pm
+Excel/Writer/XLSX/Package/Theme.pm
+Excel/Writer/XLSX/Package/VML.pm
+Excel/Writer/XLSX/Package/XMLwriter.pm
+Excel/Writer/XLSX/Shape.pm
+Excel/Writer/XLSX/Utility.pm
+Excel/Writer/XLSX/Workbook.pm
+Excel/Writer/XLSX/Worksheet.pm
+Exporter.pm
+Exporter/Heavy.pm
+Fcntl.pm
+File/Basename.pm
+File/Copy.pm
+File/DosGlob.pm
+File/Find.pm
+File/Glob.pm
+File/GlobMapper.pm
+File/Path.pm
+File/Spec.pm
+File/Spec/Unix.pm
+File/Temp.pm
+File/stat.pm
+FileHandle.pm
+Getopt/Std.pm
+IO.pm
+IO/Compress/Base/Common.pm
+IO/Compress/Gzip/Constants.pm
+IO/Compress/Zip/Constants.pm
+IO/Compress/Zlib/Extra.pm
+IO/File.pm
+IO/Handle.pm
+IO/Seekable.pm
+IO/Socket.pm
+IO/Socket/INET.pm
+IO/Socket/UNIX.pm
+IO/Uncompress/Adapter/Identity.pm
+IO/Uncompress/Adapter/Inflate.pm
+IO/Uncompress/Base.pm
+IO/Uncompress/RawInflate.pm
+IO/Uncompress/Unzip.pm
+JSON.pm
+JSON/PP.pm
+Java.pm
+JavaArray.pm
+List/Util.pm
+MD5.pm
+MIME/Base64.pm
+Mainframe/Copybook.pm
+Math/Expression.pm
+Math/Expression/Evaluator/Lexer.pm
+Math/Expression/Evaluator/Parser.pm
+Math/Expression/Evaluator/Util.pm
+OLE/Storage_Lite.pm
+PERL2EXE_STORAGE/auto/Compress/Raw/Zlib/autosplit.ix
+PERL2EXE_STORAGE/auto/POSIX/autosplit.ix
+POSIX.pm
+Params/Util.pm
+Scalar/Util.pm
+SelectSaver.pm
+Socket.pm
+Spreadsheet/ParseExcel.pm
+Spreadsheet/ParseExcel/Cell.pm
+Spreadsheet/ParseExcel/FmtDefault.pm
+Spreadsheet/ParseExcel/Font.pm
+Spreadsheet/ParseExcel/Format.pm
+Spreadsheet/ParseExcel/Utility.pm
+Spreadsheet/ParseExcel/Workbook.pm
+Spreadsheet/ParseExcel/Worksheet.pm
+Sub/Exporter.pm
+Sub/Install.pm
+Symbol.pm
+Sys/Hostname.pm
+Text/CSV.pm
+Text/CSV_XS.pm
+Tie/Hash.pm
+Time/HiRes.pm
+Time/Local.pm
+Validation/Validator.pm
+XML/NamespaceSupport.pm
+XML/Parser.pm
+XML/Parser/Expat.pm
+XML/SAX.pm
+XML/SAX/Base.pm
+XML/SAX/DocumentLocator.pm
+XML/SAX/Exception.pm
+XML/SAX/ParserFactory.pm
+XML/SAX/PurePerl.pm
+XML/SAX/PurePerl/DTDDecls.pm
+XML/SAX/PurePerl/DocType.pm
+XML/SAX/PurePerl/EncodingDetect.pm
+XML/SAX/PurePerl/Productions.pm
+XML/SAX/PurePerl/Reader.pm
+XML/SAX/PurePerl/Reader/Stream.pm
+XML/SAX/PurePerl/Reader/String.pm
+XML/SAX/PurePerl/Reader/URI.pm
+XML/SAX/PurePerl/Reader/UnicodeExt.pm
+XML/SAX/PurePerl/UnicodeExt.pm
+XML/SAX/PurePerl/XMLDecl.pm
+XML/Simple.pm
+XSLoader.pm
+auto/POSIX/load_imports.al
+autouse.pm
+base.pm
+bytes.pm
+constant.pm
+feature.pm
+integer.pm
+overload.pm
+strict.pm
+threads.pm
+threads/shared.pm
+unicore/To/Digit.pl
+unicore/To/Fold.pl
+unicore/To/Lower.pl
+unicore/To/Title.pl
+unicore/To/Upper.pl
+utf8.pm
+vars.pm
+warnings.pm
+warnings/register.pm
+
+INFA2ANY [2728:DBG]: 2023-06-21 11:39:49 dirname: ./configs/new_configs
+INFA2ANY [2775]: 2023-06-21 11:39:49 Inheriting from file: infa2databricks_dbsql_main.json
+INFA2ANY [2728:DBG]: 2023-06-21 11:39:49 dirname: ./configs/new_configs
+INFA2ANY [2793:DBG]: 2023-06-21 11:39:49 Adding to tag: variable_declaration_template
+INFA2ANY [2793:DBG]: 2023-06-21 11:39:49 Adding to tag: target_file_extension
+INFA2ANY [2793:DBG]: 2023-06-21 11:39:49 Adding to tag: table_creation_statement
+INFA2ANY [2793:DBG]: 2023-06-21 11:39:49 Adding to tag: component_header_comment
+INFA2ANY [276:DBG]: 2023-06-21 11:39:49 cfg: $VAR1 = {
+  'CUSTOM_CONVERTER_MODULES' => [
+    '/home/bladebridge/vijaypavann/bb-tool/EHI/configs/new_configs/hooks/databricks_output_hooks.pl'
+  ],
+  'KEEP_UNUSED_TARGET_FIELDS' => '1',
+  'SYS_TYPE_CONF' => {
+    'FLAT FILE' => 'FLATFILE',
+    'ORACLE' => 'ORACLE',
+    'Oracle' => 'ORACLE',
+    'TERADATA' => 'Teradata'
+  },
+  'code_generation_language' => 'SQL',
+  'component_header_comment' => '#Component %COMPONENT%, Type %TYPE% %ADDITIONAL_COMMENT%',
+  'connection_profile_map' => {
+    'DBConnection_NALA_SHA_REL' => '${DB001}'
+  },
+  'consolidate_nb_statements' => 1,
+  'dataset_creation_method' => 'TABLE',
+  'datatype_mapping' => {
+    'byteint' => 'integer',
+    'char' => 'varchar',
+    'date' => {
+      'DATATYPE' => 'date',
+      'PRECISION' => '38',
+      'SCALE' => '10'
+    },
+    'double' => {
+      'DATATYPE' => 'DOUBLE',
+      'LENGTH' => '24',
+      'PHYSICALLENGTH' => '52',
+      'PRECISION' => '52',
+      'SCALE' => '5'
+    },
+    'nchar' => 'varchar',
+    'numeric' => 'NUMBER',
+    'nvarchar' => 'varchar',
+    'nvarchar2' => 'varchar',
+    'smallint' => 'integer',
+    'string' => 'varchar',
+    'timestamp' => {
+      'DATATYPE' => 'timestampntz',
+      'LENGTH' => '38',
+      'PRECISION' => '38',
+      'SCALE' => '9'
+    }
+  },
+  'ddl_statement_wrap' => 'spark.sql("""%INNER_SQL%""").display()',
+  'etl_converter_config_file' => './configs/new_configs/infa2databricks.json',
+  'fix_spark_sql_env' => '1',
+  'global_replace' => {
+    'SINGLE_COLUMN_REFERENCE' => '$1',
+    '\\$ParamSkipRowLog' => '${ParamSkipRowLog}',
+    '\\$ParamSourceFileName' => '${ParamSourceFileName}'
+  },
+  'identity_column_definition' => 'source_record_id number autoincrement start 1 increment 1',
+  'ignore_connection_profiles' => '1',
+  'inherit_from' => [
+    'infa2databricks_dbsql_main.json'
+  ],
+  'mapplet_class_name' => 'Mapplets',
+  'mapplet_code_indent' => '        ',
+  'mapplet_conclusion' => '        #Implementation %MAPPLET_NAME% concluded
+
+',
+  'mapplet_function_invocation' => 'Mapplets.%MAPPLET_NAME%(dbh, \'%INPUT%\',\'%OUTPUT%\')',
+  'mapplet_function_name' => '%MAPPLET_NAME%',
+  'mapplet_header_template' => 'C:/Work/Projects/DWS/Perl/DWSServerScripts/Config/SQL/python_mapplet_header_template.py',
+  'mapplet_input_declaration' => '    def %MAPPLET_NAME%(dbh, %INPUT_OUTPUT_TABLES%):',
+  'mapplet_instance_prefixes' => [
+    'sc_'
+  ],
+  'mapplet_object_var_inject_format' => '""" + %OBJECT_NAME% + """',
+  'mapplet_sql_code_indent' => '    ',
+  'output_description' => 1,
+  'output_filename_template' => '%JOB_NAME%.',
+  'output_title' => 1,
+  'post_fragment_generation_routine' => '::replace_params_as_spark',
+  'retrieve_rowid_ind' => '1',
+  'rowid_column_name' => 'source_record_id',
+  'rowid_expression' => 'row_number() over (order by 1)',
+  'sql_converter_config_file' => './configs/new_configs/teradata2databricks.json',
+  'sql_statement_separator' => ';
+',
+  'table_creation_statement' => '%TABLE_NAME% = spark.sql("""
+%INNER_SQL%""")
+%TABLE_NAME%.createOrReplaceTempView("%TABLE_NAME%")',
+  'target_file_extension' => 'py',
+  'title_template' => 'Folder %FOLDERNAME%, Job %JOBNAME%',
+  'transformer_vars_use_cte_flag' => '1',
+  'use_notebook_md' => 1,
+  'variable_declaration_comment' => 'Variable declaration section',
+  'variable_declaration_template' => 'dbutils.widgets.text("%VARNAME%","%DEFAULT_VALUE%")',
+  'wrap_ddl_statements' => '1'
+};
+
+INFA2ANY [2728:DBG]: 2023-06-21 11:39:49 dirname: ./configs/new_configs
+INFA2ANY [2775]: 2023-06-21 11:39:49 Inheriting from file: databricks_output_hooks.json
+INFA2ANY [2728:DBG]: 2023-06-21 11:39:49 dirname: ./configs/new_configs
+INFA2ANY [2775]: 2023-06-21 11:39:49 Inheriting from file: general_sql_specs.json
+INFA2ANY [2728:DBG]: 2023-06-21 11:39:49 dirname: ./configs/new_configs
+INFA2ANY [2793:DBG]: 2023-06-21 11:39:49 Adding to tag: inherit_from
+INFA2ANY [2793:DBG]: 2023-06-21 11:39:49 Adding to tag: adjust_commas
+INFA2ANY [2793:DBG]: 2023-06-21 11:39:49 Adding to tag: stmt_categorization_patterns
+INFA2ANY [2728:DBG]: 2023-06-21 11:39:49 dirname: ./configs/new_configs

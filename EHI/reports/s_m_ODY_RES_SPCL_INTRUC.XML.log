@@ -1,0 +1,63 @@
+
+Blade Bridge
+
+************ sqlconv ************
+VERSION 2.9.9 Build 20230125
+***********************************
+
+License Info: LICENSEE => EHI
+License Info: EXPIRE_DATE => 20301231
+License Info: CODE_CONVERSION => CODE_CONVERSION_ENABLED
+License Info: TRUSTED_FLAG => N
+Validation::Validator [126]: 2023-06-20 20:55:37 Checksum count loaded: 10
+VERBOSE ON
+BBSQLConv [208]: 2023-06-20 20:55:37 TRUSTED MODE: N;
+BBSQLConv [2894:DBG]: 2023-06-20 20:55:37 dirname: ./configs/new_configs/infapc2databricksPyspark for file ./configs/new_configs/infapc2databricksPyspark/infapc2pyspark.json
+BBSQLConv [3348]: 2023-06-20 20:55:37 Loading files: $VAR1 = [
+  './configs/new_configs/hooks/infa2pyspark_ext.pl'
+];
+
+DBCatalog::SQLParser [241]: 2023-06-20 20:55:37 ********** PARSER VERBOSE FLAG: 1 **********
+DBCatalog::SQLParser [242:DBG]: 2023-06-20 20:55:37 ********** DEBUG: PARSER VERBOSE FLAG: 1 **********
+DBCatalog::SQLParser [246:DBG]: 2023-06-20 20:55:37 Looking for tag extract_embedded_sql
+DBCatalog::SQLParser [254:DBG]: 2023-06-20 20:55:37 Cannot find tag extract_embedded_sql.  This is not an error.
+DBCatalog::SQLParser [246:DBG]: 2023-06-20 20:55:37 Looking for tag embedded_sql_tags
+DBCatalog::SQLParser [254:DBG]: 2023-06-20 20:55:37 Cannot find tag embedded_sql_tags.  This is not an error.
+DBCatalog::SQLParser [246:DBG]: 2023-06-20 20:55:37 Looking for tag embedded_sql_file_ref
+DBCatalog::SQLParser [254:DBG]: 2023-06-20 20:55:37 Cannot find tag embedded_sql_file_ref.  This is not an error.
+DBCatalog::SQLParser [257:DBG]: 2023-06-20 20:55:37 EMBEDDED_SQL tags: $VAR1 = undef;
+
+BBSQLConv [290:DBG]: 2023-06-20 20:55:37 MLOAD pointer: SQL::TeradataMLoad=HASH(0x28eed20)
+BBSQLConv [291:DBG]: 2023-06-20 20:55:37 TPT pointer: SQL::TeradataTPT=HASH(0x28d9718)
+BBSQLConv [292:DBG]: 2023-06-20 20:55:37 FastExport pointer: SQL::TeradataFastExport=HASH(0x28eeb28)
+BBSQLConv [293:DBG]: 2023-06-20 20:55:37 FastLoad pointer: SQL::TeradataFastLoad=HASH(0x28eee70)
+BBSQLConv [294:DBG]: 2023-06-20 20:55:37 Tpump pointer: SQL::TeradataTpump=HASH(0x28ec0b0)
+FILES TO PROCESS (1):
+./src/POC/s_m_ODY_RES_SPCL_INTRUC.XML
+DBCatalog::SQLParser [241]: 2023-06-20 20:55:37 ********** PARSER VERBOSE FLAG: 1 **********
+DBCatalog::SQLParser [242:DBG]: 2023-06-20 20:55:37 ********** DEBUG: PARSER VERBOSE FLAG: 1 **********
+DBCatalog::SQLParser [246:DBG]: 2023-06-20 20:55:37 Looking for tag extract_embedded_sql
+DBCatalog::SQLParser [254:DBG]: 2023-06-20 20:55:37 Cannot find tag extract_embedded_sql.  This is not an error.
+DBCatalog::SQLParser [246:DBG]: 2023-06-20 20:55:37 Looking for tag embedded_sql_tags
+DBCatalog::SQLParser [254:DBG]: 2023-06-20 20:55:37 Cannot find tag embedded_sql_tags.  This is not an error.
+DBCatalog::SQLParser [246:DBG]: 2023-06-20 20:55:37 Looking for tag embedded_sql_file_ref
+DBCatalog::SQLParser [254:DBG]: 2023-06-20 20:55:37 Cannot find tag embedded_sql_file_ref.  This is not an error.
+DBCatalog::SQLParser [257:DBG]: 2023-06-20 20:55:37 EMBEDDED_SQL tags: $VAR1 = undef;
+
+DBCatalog::SQLParser [865]: 2023-06-20 20:55:37 Scanning File ./src/POC/s_m_ODY_RES_SPCL_INTRUC.XML.  Number of lines: 721
+DBCatalog::SQLParser [1051:DBG]: 2023-06-20 20:55:37 Reached end of file for ./src/POC/s_m_ODY_RES_SPCL_INTRUC.XML.
+DBCatalog::SQLParser [1380:DBG]: 2023-06-20 20:55:37 Categories not defined!
+DBCatalog::SQLParser [1079:DBG]: 2023-06-20 20:55:37 analyze_statement: SQL:
+
+
+DBCatalog::SQLParser [1274:DBG]: 2023-06-20 20:55:37 *********** scan_dependencies reading ./src/POC/s_m_ODY_RES_SPCL_INTRUC.XML. SQL:
+
+
+
+DBCatalog::SQLParser [1573:DBG]: 2023-06-20 20:55:37 Collecting checksums for ./src/POC/s_m_ODY_RES_SPCL_INTRUC.XML
+DBCatalog::SQLParser [1582:DBG]: 2023-06-20 20:55:37 Checksum: 40714FD23E2894DC45997FB6C4946D67.  Number of lines for ./src/POC/s_m_ODY_RES_SPCL_INTRUC.XML: 721
+DBCatalog::SQLParser [1550:DBG]: 2023-06-20 20:55:37 Registered checksum for ./src/POC/s_m_ODY_RES_SPCL_INTRUC.XML with 40714FD23E2894DC45997FB6C4946D67
+BBSQLConv [311]: 2023-06-20 20:55:37 File parts (File 1 of 1: s_m_ODY_RES_SPCL_INTRUC.XML, ./src/POC/, 
+main [332]: 2023-06-20 20:55:37 File: _m_ODY_RES_SPCL_INTRUC.XML; Checksum value: 40714FD23E2894DC45997FB6C4946D67
+
+BBSQLConv [335]: 2023-06-20 20:55:37 File not a part of licensed checksum: _m_ODY_RES_SPCL_INTRUC.XML, checksum value: 40714FD23E2894DC45997FB6C4946D67.  Skipping!
