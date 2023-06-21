@@ -13,7 +13,7 @@
 
 	// This file is used to store / retrieve information during conversions, e.g. to save info during one conversion and retrive it in another.
 	// The default location is a file named "sqlconv_conversion_catalog.txt" in the directory pointed to by the TEMP environment variable.
-	"conversion_catalog_file": "!BB_CONVERSION_CATALOG_FILE!",
+	// "conversion_catalog_file": "!BB_CONVERSION_CATALOG_FILE!",
 
 	// ************ SYSTEM SETTINGS ************ //
 	"load_files" : ["!BB_CONFIG_CONVERTER_DIR!/teradata_source_hooks.pl"], //gets called from preprocess_routine

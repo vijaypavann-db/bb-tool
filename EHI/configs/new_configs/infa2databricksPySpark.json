@@ -12,7 +12,7 @@
 	"ddl_statement_wrap" : "spark.sql(\"\"\"%INNER_SQL%\"\"\").display()",
 
 	"fix_spark_sql_env" : "1",
-	"CUSTOM_CONVERTER_MODULES" : ["/home/bladebridge/vijaypavann/bb-tool/EHI/configs/new_configs/hooks/databricks_output_hooks.pl"],
+	// "CUSTOM_CONVERTER_MODULES" : ["/home/bladebridge/vijaypavann/bb-tool/EHI/configs/new_configs/hooks/databricks_output_hooks.pl"],
 	"post_fragment_generation_routine" : "::replace_params_as_spark"
 
 }
