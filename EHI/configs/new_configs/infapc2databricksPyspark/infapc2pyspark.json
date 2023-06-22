@@ -283,11 +283,7 @@ starttime = datetime.now() #start timestamp of the script~
 	"commands" : {
 		"READER_FILE_DELIMITED_LOOKUP": "spark.read.csv('%PATH%%DELIMITED_FILE%', sep='%DELIMITER%', header='%HEADER%')",
 		"READER_FILE_DELIMITED": "spark.read.csv('%FILENAME%', sep='%DELIMITER%', header='%HEADER%')",
-		"READER_RELATIONAL": "spark.read.jdbc(%CONNECT_STRING%, f\"\"\"%TABLE_NAME%\"\"\", ~
-properties={~
-'user': %LOGIN%,~
-'password': %PASSWORD%,~
-'driver': %DRIVER%})",
+		"READER_RELATIONAL": "spark.sql(f\"\"\"%TABLE_NAME%\"\"\")",
 		"READER_DEFAULT": "spark.read.jdbc(%CONNECT_STRING%, f\"\"\"%TABLE_NAME%\"\"\", properties={'user': %LOGIN%, 'password': %PASSWORD%, 'driver': %DRIVER%})",
 		"READER_SALEFORCE": "spark.read.salesforce(%CONNECT_STRING%, f\"\"\"%TABLE_NAME%\"\"\", properties={'user': %LOGIN%, 'password': %PASSWORD%, 'driver': %DRIVER%})",
 		"WRITER_FILE_DELIMITED": "%DF%.write.format('csv').option('header','%HEADER%').mode('overwrite').option(sep,'%DELIMITER%').csv('%PATH%')",
