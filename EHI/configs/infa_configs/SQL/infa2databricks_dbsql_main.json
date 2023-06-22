@@ -1,0 +1,122 @@
+{
+
+	// ******** Databricks output options *******
+	"code_generation_language" : "SQL", // can be SQL or PYTHON
+	"target_file_extension" : "sql", // make sure this is in sync with code_generation_language setting.
+	"use_notebook_md" : 1, //indicate if databricks notebook markdowns should be used on the output or if we are generating a plain SQL or PYTHON file
+
+	"output_title" : 1,
+	"title_template" : "Folder %FOLDERNAME%, Job %JOBNAME%",
+	"output_description" : 1,
+	"consolidate_nb_statements" : 1, // for ETL source, will group variables, pre/post sql, prerequisites (unconnected lookups)
+
+	"variable_declaration_template" : "CREATE WIDGET TEXT %VARNAME% DEFAULT %DEFAULT_VALUE%;",
+	"variable_declaration_comment" : "Variable declaration section",
+
+	// ******** DBSQL Generation Options *******
+	//"dataset_creation_method" : "CTE",
+	"dataset_creation_method" : "TABLE",
+	"table_creation_statement" : "CREATE OR REPLACE TABLE %TABLE_NAME% AS\n(\n%INNER_SQL%\n)\n", //ensure there are %TABLE_NAME% and %INNER_SQL% tokens present in this spec
+	"retrieve_rowid_ind" : "1", //retrieves unique row identifier from source
+	"rowid_column_name" : "source_record_id",
+	"identity_column_definition" : "source_record_id number autoincrement start 1 increment 1", // in case we need to use COPY INTO
+	"rowid_expression" : "row_number() over (order by 1)",
+	"sql_statement_separator" : ";\n",
+	"component_header_comment" : "-- Component %COMPONENT%, Type %TYPE% %ADDITIONAL_COMMENT%",
+
+	"sql_converter_config_file" : "!BB_CONFIG_CONVERTER!/teradata2databricks.json",
+	"etl_converter_config_file" : "!BB_CONFIG_CONVERTER!/infa2databricks.json",
+	
+	"transformer_vars_use_cte_flag" : "1",
+
+	//"skip_variable_token_prefixes" : "1",
+
+	"KEEP_UNUSED_TARGET_FIELDS" : "1",
+
+	"ignore_connection_profiles" : "1", //if ON, will blank out %CONNECTION_PROFILE%. prefixes coming from agnostic layer
+	
+	"connection_profile_map" : {
+		"DBConnection_NALA_SHA_REL" : "${DB001}"
+	},
+
+	//file read and write
+	//"file_read_delim_command_template" : "C:/Work/Projects/DWS/BBPerl/backend-perl-shared/Config/Writer/SQL/snowflake_copy_delim_into_table_template.sql",
+	//"file_read_fixedwidth_command_template" : "C:/Work/Projects/DWS/BBPerl/backend-perl-shared/Config/Writer/SQL/snowflake_copy_fixed_width_into_table_template.sql",
+	//"file_write_delim_command_template" : "C:/Work/Projects/DWS/BBPerl/backend-perl-shared/Config/Writer/SQL/snowflake_copy_delim_from_table_template.sql",
+
+	"global_replace" : {
+		"SINGLE_COLUMN_REFERENCE" : "$1", // snowflake needs $1 to reference the 1st column on COPY INTO
+		"\$ParamSourceFileName" : "${ParamSourceFileName}",
+		"\$ParamSkipRowLog" : "${ParamSkipRowLog}"
+	},
+
+	"datatype_mapping" : {
+		"smallint" : "integer",
+		"nvarchar" : "varchar",
+		"nvarchar2" : "varchar",
+		"string" : "varchar",
+		"nchar" : "varchar",
+		"char" : "varchar",
+		"numeric" : "NUMBER",
+		"byteint" : "integer",
+		//"timestamp" : {"DATATYPE" : "DATE", "LENGTH" :"19", "PRECISION" : "38", "SCALE" : "10"}
+		"timestamp" : {"DATATYPE" : "timestampntz", "LENGTH" :"38", "PRECISION" : "38", "SCALE" : "9"},
+		"date" : {"DATATYPE" : "date", "PRECISION" : "38", "SCALE" : "10"},
+		"double" : { "DATATYPE" : "DOUBLE", "LENGTH" : "24", "PHYSICALLENGTH" : "52", "PRECISION": "52", "SCALE" : "5" }
+	},
+	
+	
+	//////////////// MAPPLETS ////////////////
+	"mapplet_class_name" : "Mapplets",
+	"mapplet_function_name" : "%MAPPLET_NAME%",
+	//"mapplet_func_declaration_code_indent" : "    ", //function declaration code indent for mapplets
+	"mapplet_code_indent" : "        ", //mapplet general code indent - 8 spaces
+	"mapplet_sql_code_indent" : "    ", //additional indents for multiline sql statements within mapplets. 4 spaces
+	"mapplet_header_template" : "C:/Work/Projects/DWS/Perl/DWSServerScripts/Config/SQL/python_mapplet_header_template.py",
+	"mapplet_input_declaration" : "    def %MAPPLET_NAME%(dbh, %INPUT_OUTPUT_TABLES%):", //specifying python function declaration.  But could be javascript in other cases
+	"mapplet_conclusion" : "        #Implementation %MAPPLET_NAME% concluded\n\n",
+	"mapplet_object_var_inject_format" : "\"\"\" + %OBJECT_NAME% + \"\"\"", // use """ + OBJECT_NAME + """.
+	"mapplet_function_invocation" : "Mapplets.%MAPPLET_NAME%(dbh, '%INPUT%','%OUTPUT%')",
+	"mapplet_instance_prefixes" : ["sc_"] // specifies potential prefixes for mapplets.  This is needed when the converter generates the mapplet code and tries to grab the connection info
+
+
+	// System settings.
+
+	,"SYS_TYPE_CONF" : {"FLAT FILE" : "FLATFILE", "TERADATA" : "Teradata", "ORACLE" : "ORACLE","Oracle" : "ORACLE"} // add more if needed
+
+	//"pre_finalization_handler" : "::finalize_content"
+	//************** PYTHON WRAPPER **************
+	//"target_file_extension" : "py",
+	//"output_filename_template" : "%JOB_NAME%.py",
+	//item renaming
+	//"mapping_rename" : {"m_" : "t_"}, // format: rename_from : rename_to 
+	//"session_rename" : {"s_" : "t_"},
+	//"workflow_rename" : {"wf_" : "j_"}, // array of remainings
+
+	
+	//"CUSTOM_CONVERTER_MODULES" : ["C:/Work/Projects/DWS/Perl/DWSServerScripts/pygen.pl"],
+	
+	//"initialize_hooks_call" : "::init_hooks", //initialize context, pass all relevant info
+	//"script_header" : "import sys\nimport snowflake.connector\nfrom sfwrapper import SFWrapper\nfrom sys import exit\nimport os\n\n",
+	//"script_header_template" : "C:/Work/Projects/DWS/Perl/DWSServerScripts/Config/SQL/python_header_template.py",
+	//"db_connect_init_call" : "dbh = SFWrapper()",
+	//"db_connect_connect_call" : "dbh.connect(login=os.environ['SF_LOGIN'], password=os.environ['SF_PASSWORD'], account=os.environ['SF_ACCOUNT'], warehouse=os.environ['SF_WAREHOUSE'], database=os.environ['DATABASE'], schema=os.environ['SF_SCHEMA'])\n\ndbh.register_env_var('WORK_DB')\ndbh.register_env_var('DATE_VMDB')\ndbh.register_env_var('MERCH_VMDB')\ndbh.register_env_var('MERCH_DB')\n\n#initialize statement counter, so we can keep track of statements.\nstatement_id = ''\n\ntry:",
+	//"dbh_varname" : "dbh", //database handle variable name
+	//"rowcount_varname" : "ROW_COUNT",
+	//"rowcount_message" : "dbh.debug_msg(\"Statement Id: \" + statement_id + \", AFFECTED ROWS: \" + str(ROW_COUNT))",
+	//"sql_statement_wrapper" : "ROW_COUNT = self.dbh.exec(\"\"\"%SQL%\"\"\")",
+	//"pre_sql_line" : "statement_id = '%STATEMENT_COUNT%'\ndbh.debug_msg(\"Executing Statement Id: \" + statement_id)",
+	
+	//"script_footer" : "\nexcept snowflake.connector.errors.ProgrammingError as e:\n\tprint (\"Statement Id: \" + statement_id + \" failed!\")\n\tprint('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg, e.sfqid))\n\nfinally:\n\texit(0);",
+	//"script_footer_template" : "C:/Work/Projects/DWS/Perl/DWSServerScripts/Config/SQL/python_footer_template.py",
+	//"code_indent" : "            ", //general code indent - 12 spaces
+	//"sql_code_indent" : "    ", //indents multiline statements. 4 spaces
+
+	//Table prefixes
+	//"intermediary_table_prefix" : "${WORK_NALA_DB}.",
+	
+	//"intermediary_table_prefix" : "${WORK_INFA_DB}.",	
+	//"target_table_prefix" : "${TARGET_DB}.",
+	
+
+}

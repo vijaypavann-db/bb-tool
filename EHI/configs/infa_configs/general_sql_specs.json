@@ -1,0 +1,148 @@
+{
+	"stmt_categorization_patterns": [
+			{"category": "PACKAGE", "patterns" : ["CREATE\s+OR\s+REPLACE\s+PACKAGE\s+"]},
+			{"category" : "JAVASCRIPT_NEXT", "patterns" : ["\w+\s*\.\s*next\s*\((.*?)\)"]},
+			{"category" : "JAVASCRIPT_EXECUTE", "patterns" : ["(var\s+|)\w+\s*=\s*\w+\.\s*execute\s*\((.*?)\)", ".*\w+\.\s*execute\s*\((.*?)\)"]},
+			{"category" : "JAVASCRIPT_CREATE_STMT", "patterns" : [".*\w+\.\s*createStatement"]},
+			{"category" : "TRY_START",  "patterns" : [".*\btry\s*\{"]},
+			{"category" : "CATCH_START",  "patterns" : [".*\bcatch\s*\("]},
+			{"category": "TERADATA_FASTLOAD", "patterns" : ["\.BEGIN\s+LOADING"]},
+			{"category": "TERADATA_MLOAD", "patterns" : ["\.BEGIN\s+MLOAD\b"]},
+			{"category": "TERADATA_TPUMP", "patterns" : ["\.BEGIN\s+LOAD\b"]},
+			{"category": "TERADATA_BTEQ", "patterns" : ["^\s*\.\S"]},
+			{"category": "GET_ROW_COUNT", "patterns" : ["get\s+diagnostics.*row_count", "\s*(\w*)\s*\:\=\s*SQL\%ROWCOUNT"]},
+			{"category": "TABLE_DDL_AS_SELECT", "patterns" : ["CREATE(.*?)\bTABLE\b(.*?)AS\s*\(.*\bSELECT\b",  "CREATE(.*?)\bTABLE\b(.*?)AS\s*\bSELECT\b"]},
+			{"category": "TABLE_DDL_IF_NOT_EXISTS", "patterns" : ["CREATE\s+TABLE\s+if\s+NOT\s+EXISTS","CREATE\s+TEMP.*\s+TABLE\s+if\s+NOT\s+EXISTS"]},
+			{"category": "TABLE_DDL_LIKE", "patterns" : ["CREATE(.*?)TABLE(.*?)AS(.*?)WITH(\s*)NO(\s*)DATA", "CREATE(.*?)TABLE(.*?) LIKE (.*?)"]},
+			{"category": "TABLE_DDL_EXTERNAL", "patterns" : ["CREATE\s+EXTERNAL\s+TABLE","CREATE\s+TABLE(.*)ORGANIZATION\s+EXTERNAL","CREATE\s+MANAGED\s+EXTERNAL\s+TABLE"]},
+			{"category": "CTE",  "patterns" : ["CT\s"]},
+			{"category": "TABLE_DDL", "patterns" : ["CREATE\s+TABLE","CREATE\s+SET.*\s+TABLE","CREATE\s+MULTISET.*\s+TABLE","CREATE\s+VOLATILE.*\s+TABLE","CREATE\s+TEMPORARY*\s+TABLE"]},
+			{"category": "TABLE_DROP", "patterns" : ["DROP\s+TABLE"]},
+			{"category": "PROC_DROP", "patterns" : ["DROP\s+PROC"]},
+			{"category": "VIEW_DROP", "patterns" : ["DROP\s+VIEW"]},
+			{"category": "FUNCTION_DROP", "patterns" : ["DROP\s+FUNCTION"]},
+			{"category": "CREATE_VIEW", "patterns" : ["CREATE(\s+)VIEW", "REPLACE(\s+)VIEW", "CREATE(\s+)OR\s+REPLACE\s+VIEW", "CREATE(\s+)OR\s+REPLACE\s+FORCE\s+VIEW"]},
+			{"category": "CREATE_RECURSIVE_VIEW", "patterns" : [".*CREATE(\s+)RECURSIVE(\s+)VIEW", ".*REPLACE(\s+)RECURSIVE(\s+)VIEW"]},
+			{"category": "MATERIALIZED_VIEW_DDL", "patterns" : ["CREATE(\s?)JOIN(\s?)INDEX","CREATE(\s?)MATERIALIZED(\s?)VIEW"]},
+			{"category": "DYNAMIC_SQL", "patterns" : ["EXECUTE IMMEDIATE", "EXECUTE\s+", "\bPERFORM\s+", "DBC\.SYSEXECSQL", "DBC_SYSEXECSQL", "\bEXEC\b"]},
+			//{"category": "READ_DML_INTO_VAR", "patterns" : ["SELECT(\s?).*INTO\s+\w"]},
+			{"category": "READ_DML_INTO_VAR", "patterns" : ["SELECT(\s?)(.*?)(INTO)\s+(\w+?)(?!\.)\W"]},
+			{"category": "UPSERT", "patterns" : ["^\s*UPSERT(\s?)"]},
+			{"category": "MERGE", "patterns" : ["^\s*MERGE(\s?)"]},
+			{"category": "DELETE_MULTI_WHERE_CONDITION", "patterns" : ["DELETE.*?FROM.*?WHERE\s*\(\w+\.?\w*\s*\,.*?\)"]},
+			{"category": "DELETE", "patterns" : ["^\s*DELETE(\s?)","^\s*DEL(\s?)"]},
+			{"category": "CALL", "patterns" : ["\s*CALL\s"]},
+			{"category": "TRUNCATE_TABLE",  "patterns" : ["TRUNCATE\s+"]},
+			{"category": "WHILE_LOOP", "patterns" : [".*WHILE.*LOOP", ".*\bwhile\s*(.*?)\("]},
+			{"category": "SELECT_VAR_ASSIGNMENT", "patterns" : ["\s*\bSELECT\b\s*\@?\w+\s*\="]},
+			{"category": "READ_DML", "patterns" : ["SELECT(\s?)", "\bSEL(\s?)"]},
+			{"category": "CREATE_INDEX", "patterns" : ["CREATE INDEX \((.*?)\).*;", "CREATE\s+INDEX"]},
+			{"category": "CREATE_PROCEDURE", "patterns" : [".*CREATE PROCEDURE \((.*?)\).*;", ".*CREATE\s*OR\s*REPLACE\s*PROCEDURE", ".*CREATE\s*PROCEDURE", ".*REPLACE\s*PROCEDURE"]},
+			{"category": "CREATE_MACRO", "patterns" : [".*REPLACE\s+MACRO\s+"]},
+			{"category": "END_PROCEDURE",  "patterns" : ["END_PROC", "LANGUAGE plpgsql", "\$BODY\$.*LANGUAGE plpgsql"]},
+			{"category": "PROGRAM_DECLARATION", "patterns" : ["^\s*PROCEDURE\s+","^\s*FUNCTION\s+","CREATE\s*OR\s*REPLACE\s*FUNCTION", "CREATE\s*FUNCTION", "CREATE\s*OR\s*REPLACE\s*PROCEDURE", "CREATE\s*PROCEDURE"]},
+			{"category": "RAISE_NOTICE", "patterns" : ["RAISE\s+NOTICE"]},
+			{"category": "RAISE_EXCEPTION", "patterns" : ["RAISE\s+EXCEPTION"]},
+			{"category": "EXECUTE_INTO", "patterns" : ["EXECUTE\s+.*\sINTO"]},
+			{"category": "ELSE_IF", "patterns" : ["^\s*ELSE\s+IF", "^\s*ELSEIF", "^\s*ELSIF"]},
+			{"category": "ELSE", "patterns" : ["^\s*ELSE\s*$"]},
+			{"category": "IF_START", "patterns" : ["^\s*\bIF\b.*THEN", "^\s*\bIF\s", "\bIF\b.*\bTHEN\b", ".*\bif\b\s*(.*?)\("]},
+			{"category": "IF_END", "patterns" : ["^\s*END\s+IF\b"]},
+			{"category": "FOR_LOOP", "patterns" : ["^\s*FOR\s.*\sLOOP\s*", "^\s*FOR\s+\w+\s+IN\s+EXECUTE"]},
+			{"category": "END_LOOP", "patterns" : ["^\s*END\s+LOOP"]},
+			{"category": "VAR_ASSIGNMENT", "patterns" : ["\s*(\w+)\s*\:\s*\=", "\s*(\w+)\s*\=", "\s*(\w+)\[(\d+)\]\s*\:\s*\=", "\s*var\s+(\w+)\s*\=", "SET\s+\@(\w+)"]},
+			{"category": "FETCH_INTO", "patterns" : ["\bFETCH\s+.*INTO\b"]},
+			{"category": "CLOSE_CURSOR", "patterns" : ["\bCLOSE\s+\w+", "\bDEALLOCATE\s+\w+"]},
+			//{"category": "FOR_CURSOR_START", "patterns" : [".*\bFOR\b.*\sIN\b"]},
+			{"category": "CURSOR_DECLARATION", "patterns" : ["^\s*CURSOR", "^\s*(\w+)\s+CURSOR\s+FOR\b", "^\s*DECLARE.*\bCURSOR\b", "\bFOR\s+SELECT\b"]},
+			{"category": "HANDLER_DECLARATION", "patterns" : [".*\bDECLARE\b.*\bHANDLER\b"]},
+			{"category": "RETURN", "patterns" : ["^\s*RETURN\;", "^\s*RETURN\s*"]},
+			{"category": "EXCEPTION_WHEN_OTHERS", "patterns" :  ["EXCEPTION\s+WHEN\s+OTHERS"]},
+			{"category": "BEGIN", "patterns" : ["^\s*BEGIN\s*$"]},
+			{"category": "COMMIT", "patterns" : ["^\s*COMMIT\s*;\s*$","^\s*COMMIT\s*$"]},
+			{"category": "USE_DIRECTIVE", "patterns" : ["^\s*USE\s", "^\s*DATABASE\s"]},
+			{"category": "OS_COMMAND", "patterns" : ["\.OS\s", "\.RUN FILE\s"]},
+			{"category": "EXPORT_COMMAND", "patterns" : ["\.EXPORT\s"]},
+			{"category": "LABEL", "patterns" : ["\.LABEL\s"]},
+			{"category": "LABEL", "patterns" : ["\bTHEN\sGOTO", "\bTHEN\s\.GOTO"]},
+			{"category": "CREATE_SEQUENCE", "patterns" : ["\bCREATE\b\s.*\bSEQUENCE"]},
+			{"category": "DROP_SEQUENCE", "patterns" : ["\bDROP\b\s.*\bSEQUENCE"]},
+			{"category": "INSERT_OVERWRITE_DIRECTORY", "patterns" : ["INSERT\s+OVERWRITE[A-z\s\w]*DIRECTORY"]},
+			{"category": "INSERT_OVERWRITE_WITH_PARTITION", "patterns" : ["INSERT\s+OVERWRITE\s+[^;]+PARTITION"]},
+			{"category": "INSERT_OVERWRITE", "patterns" : ["INSERT\s+OVERWRITE"]},
+			{"category": "INSERT_INTO", "patterns" : ["INSERT\s+INTO"]},
+			{"category": "INSERT", "patterns" : ["INSERT\s+"]},
+			{"category": "UPDATE", "patterns" : ["^\s*UPDATE(\s?)"]},
+			{"category": "ALTER_TABLE_ADD_PARTITION", "patterns" : ["ALTER\s+TABLE\s+[A-z]+(\s?)+ADD(\s?)+[\[A-z\](\s?)]*(\s?)+PARTITION"]},			
+			{"category": "ALTER_TABLE", "patterns" : ["ALTER\s+TABLE"]},
+			{"category": "COMPUTE_STATS", "patterns" : ["COMPUTE[\s\w]+STAT"]},
+			{"category": "COLLECT_STATS", "patterns" : ["COLLECT[\s\w]+STAT"]},
+			{"category": "LOAD_DATA", "patterns" : ["^LOAD\s+DATA"]},
+			{"category": "MSCK_REPAIR_TABLE", "patterns" : ["MSCK\s+REPAIR\s+TABLE"]},
+			{"category": "INVALIDATE_METADATA", "patterns" : ["INVALIDATE\s+METADATA"]},
+			{"category": "TABLE_VAR_DECLARE", "patterns" : ["DECLARE\s+\@\w+\s+TABLE\b"]},
+			{"category": "VAR_DECLARE", "patterns" : ["DECLARE\s+"]} //this has to be after TABLE_VAR_DECLARE definition
+	],
+	"skip_sql_keywords" : ["ACCESS","FOR","AS","LOCKING","ROW", "ALL", "UNION", "WITH", "LEFT", "RIGHT", "INNER", "OUTER", "FULL", "OVERWRITE", "DIRECTORY"], //used when parsing SQL statements to capture object usage info
+	"not_function":  ["INDEX","DECIMAL", "VARCHAR2", "VARCHAR", "CHAR", "ON", "OVER", "FROM", "THAN", "RANGE", "SELECT", "VARBINARY", "VARBYTE", "TIMESTAMP", "WHILE",
+		"MERGEBLOCKRATIO", "LOG", "IF", "CHARACTER",
+		"AS", "IN", "JOIN", "KEY", "INT", "INTEGER", "INSERT", "EXISTS", "END", "''", "BY", "ELSE", "HAVE", "HAVING", "BY", "CASE", "AND", "SET", "NOT", "THEN", "WHEN", "WHERE", "VALUES"], // not to be considered a function, even if followed by a parenthesis
+	"not_function_if_followed_by":  ["CHAR", "DECIMAL", "FORMAT", "THEN", "WHEN", "WHERE", "DATE", "INT", ")", "VARCHAR"],
+	"not_function_pattern":  ["\'", "[0-9]+","\%","\"","\.","\<","\>","\/","\w+\."],
+	"not_datatype":  ["FORMAT"], // keep upper case
+	"not_function_if_preceded_by":  ["TABLE", "VIEW", "PROCEDURE", "INDEX", "CONSTRAINT", "FUNCTION", "INTO", "TABLE", "MAP"],
+	"look_back_token_count_for_not_function_if_preceded_by" : "4",
+	"statement_categories_with_datatypes" : ["TABLE_DDL", "CREATE_PROCEDURE", "PROGRAM_DECLARATION","TABLE_DDL_EXTERNAL","TABLE_DDL_IF_NOT_EXISTS"],
+	"variable_declaration_categories_with_datatypes" : ["VAR_DECLARE"],
+	"exclude_tokens_from_datatypes" : ["TITLE", "FORMAT", "COMPRESS", "NOT", "NULL", "PARTITION", "INDEX", "RANGE_N", "CASE_N", "BETWEEN", "AND", "PARTITIONED","BY"], // these tokens and anything else following them will not be included into the data types list
+	"not_object": ["OFF", "NO", "UP", "USING", "VALUES", "INDEX", "EXCEPT", "COMMAND", "DATA", "RANK", "OPTIONS", "VOLATILE", "BEFORE", "AFTER","VIEW", "DATABASE", "DROP", "ERROR", "FALLBACK", "JOURNAL", "LOCK", "ROLE", "UNIQUE"],
+	"not_object_if_followed_by": ["="],
+	"not_object_if_preceded_by": ["WITH"],
+	"min_object_length": "3",
+	"adjust_commas" : "1", //gets rid of consecutive commas. commas preceeding closing params will be eliminated 
+	"unbalanced_parenthesis_check" : "1",
+	"bulk_test_command_template" :
+		{
+			"SNOWFLAKE" : [
+				"!print AUDIT:PROGRESS_START %CURRENT_ITER%/%TOTAL_COUNT%",
+				"!print AUDIT:HEADER %PROGRAM_NAME%", //keep this format, it is trapped by the log reader
+				"!system TYPE NUL > %TEMP_FOLDER%/%BATCH_ID%_%PROGRAM_NAME%.txt", //blank out the spool file if it exists.  do not chage this template, so the scanner will pick up only relevant files.
+				"!spool %TEMP_FOLDER%/%BATCH_ID%_%PROGRAM_NAME%.txt", //do not chage this template
+				"!source %CONVERTED_FILENAME%",
+				"!spool off",
+				"!print AUDIT:PROGRESS_END %CURRENT_ITER%/%TOTAL_COUNT%"
+			],
+			"MSSQL" : [
+				"print 'AUDIT:PROGRESS_START %CURRENT_ITER%/%TOTAL_COUNT%'",
+				"go",
+				"print 'AUDIT:HEADER %PROGRAM_NAME%'", //keep this format, it is trapped by the log reader
+				"go",
+				":OUT %TEMP_FOLDER%/%BATCH_ID%_%PROGRAM_NAME%.txt", //do not chage this template
+				":r %CONVERTED_FILENAME%",
+				"go",
+				":OUT stdout",
+				"go",
+				"print 'AUDIT:PROGRESS_END %CURRENT_ITER%/%TOTAL_COUNT%'",
+				"go"
+			]
+		},
+	"execution_pass_fail_keywords" :
+		{
+			"SNOWFLAKE" : 
+			{
+				"SUCCESS" : [], //this array is processed first. keep it here for now, even thought it is empty
+				"FAIL" : ["Variable.*is not defined", "not found", "SQL compilation error", "Object.*does not exist", "syntax error", "No active warehouse selected", "too long and would be, truncated", "Unsupported feature",
+					"Failed to connect", "Password is empty"]
+			},
+			"MSSQL" : 
+			{
+				"SUCCESS" : [],
+				"FAIL" : ["Unexpected argument","has to be a number", "is not a recognized","Cannot find", "Could not find", "Incorrect syntax", "There is already an object", 
+					"failed because", "could not be bound", "no message with that error","Cannot specify","is invalid","Invalid column", "Invalid format"]
+			}
+		},
+	"datatypes" : ["VARCHAR", "VARCHAR2", "CHAR", "INT", "INTEGER", "DATE", "TIMESTAMP", "DECIMAL", "BINARY"], // used to catch lines with var declarations
+	"object_types" : ["TABLE","VIEW","PROCEDURE","TRIGGER","FUNCTION"],
+	"sql_keywords" : ["INSERT", "MERGE","UPDATE","DELETE","CREATE TABLE","SELECT", "CREATE SET", "CREATE MULTISET", "CREATE JOIN INDEX", "REPLACE VIEW", "CREATE", "CREATE VIEW", "DROP", "\.BEGIN\s+LOADING", "\.BEGIN\s+MLOAD", "\.BEGIN\s+LOAD", "EXEC"],
+	"object_identifier_chars" : [">","<",".","$","{","}","\'","`"]
+}

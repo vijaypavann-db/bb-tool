@@ -1,0 +1,416 @@
+{
+	"inherit_from":["general_sql_specs.json"],
+	"target_sql" : "DATABRICKSQL",
+	"target_capabilities" : {"loops":"0"},
+	"from_after_delete" : "1",
+
+	"target_file_extension" : "sql",
+
+	"preprocess_subst" : [ // get rid of elements that are not needed, before normal file processing starts, multi line matching
+		{"from" : "\.BEGIN\s+IMPORT\s+MLOAD.*\.END\s+MLOAD;", "to" : "__MLOAD_PLACEHOLDER__"} // implement a hook to convert this using $MLOAD->{MLOAD_INFO} structure.
+	],
+
+	//"CUSTOM_CONVERTER_MODULES" : ["C:/Work/Projects/DWS/BBPerl/backend-perl-shared/Config/Converter/jssfgen.pl"],
+	"prescan_and_collect_info_hook" : "::prescan_code_bteq", //capture env variables, mload commands.  This instruction fires off before "initialize_hooks_call"
+	"initialize_hooks_call" : "::init_hooks", //initialize context, pass all relevant info
+
+	"extract_embedded_sql" : ["sh","ksh","ssh"], //listing extensions of files from which to extract embedded sql.  Use "embedded_sql_tags" key to list strings depicting the start of sql
+	//examples:
+	//"embedded_sql_tags" : ["$RUN_SQL", "$RUN_INLINE_SQL", "$RUN_DDL", "bteq"],
+	//"embedded_sql_file_ref" : ["$RUN_SQL -f"] //references a sql file
+
+	//"target_sql_filename_prefix": "sn_",
+	//"target_sql_file_header": "--/********* File converted at %CONVERTER_TIMESTAMP% *********/\n!set timing=true\n!set variable_substitution=true",
+	//"target_sql_file_header": "!set variable_substitution=true",
+	"code_fragment_breakers": {
+		"one_liner_start": ["^\s*\.OS"],
+		"line_start": ["\s*\.[a-zA-Z]"], //BTEQ's dot commands
+		"line_end": ["\;"]
+	},
+	"statement_end" : ";",
+	//apply substitutions when lines that begin with these tokens
+	"line_begin_with_subst" : [
+		{"from" : "set heading off.*", "to" : "!set header=false"},
+		{"from" : "set heading on", "to" : "!set header=true"},
+		{"from" : "DEFINE", "to" : "!DEFINE"},
+		{"from" :"@", "to" : "!source "}
+		//{"from" : "WHENEVER SQLERROR EXIT SQL.SQLCODE", "to" : "!set exit_on_error=true"}
+	],
+
+	"line_subst" : [
+		{"from" : "#(\w+)#", "to" : "${$1}", "upcase_string" : true},
+		{"from" : "POSITION\s*(\(.*?)\bIN\b", "to" : "POSITION$1,"},
+		{"from" : "\bvarchar\s*\(\d+\)", "to" : "string"},
+		{"from" : "\bchar\s*\(\d+\)", "to" : "string"},
+		{"from" : "\btimestamp\s*\(\d+\)", "to" : "timestamp"},
+	
+		{"from" : "__MLOAD_PLACEHOLDER__", "extension_call" : "::synapse_load_file"}, //special handler for MLOAD
+
+		{"from" : "\bnchar\b", "to" : "string"},
+		{"from" : "\bstring\s*\(\d+\)", "to" : "string"},
+		{"from" : "\bDATE\b", "to" : "CURRENT_DATE", "statement_categories": ["TABLE_DDL_AS_SELECT"]},
+		{"from" : "CURRENT_DATE(?!\()", "to" : "CURRENT_DATE()"},
+		{"from" : "^\s*DATABASE\s*(\S+);", "to" : "USE SCHEMA $1;"},
+		{"from" : "\bSEL\b", "to" : "SELECT"}, //abbreviation for SELECT
+		{"from" : "\bDEL\b \bFROM\b", "to" : "DELETE FROM"}, //abbreviation for DELETE
+		{"from" : "\bDEL\b", "to" : "DELETE FROM"}, //abbreviation for DELETE
+		{"from" : "\bINS\b", "to" : "INSERT INTO"}, //abbreviation for INSERT,
+		{"from" : "\bDROP\b\s+\bTEMPORARY\b", "to" : "DROP"},
+
+		{"from" : "\bdatetime\b", "to" : "DATE"},
+
+		{"from" : "\(\s+NAMED\s(\w+)\s+\)", "to" : ""},
+		{"from" : "\.os\s(.*)", "to" : "!SYSTEM $1"},
+		//{"from" : "\s*DBMS_OUTPUT.PUT_LINE\((.*)\)\;", "to" : "SELECT $1;"},
+		{"from" : "CREATE(.*?)VOLATILE TABLE", "to": "CREATE TEMPORARY TABLE"},
+		{"from" : "SET QUERY_BAND.*", "to":""},
+		{"from" : "CREATE(\s+?)MULTISET(\s+?)TABLE", "to": "CREATE TABLE"}, //no create or replace in Hive
+		//{"from" : "CREATE SET TABLE", "to" : "CREATE TABLE IF NOT EXISTS"},
+		{"from" : "CREATE SET TABLE", "to" : "CREATE TABLE"},
+//		{"from" : "CREATE(\s+?)TABLE", "to": "CREATE OR REPLACE TABLE"},
+		{"from" : ",(.*?)NO FALLBACK", "to": ""},
+		{"from" : "(.*?)NO FALLBACK", "to": ""},
+		{"from" : ",(.*?)FALLBACK\s*,", "to": ""},
+		{"from" : ",(.*?)FALLBACK", "to": ""},
+		{"from" : "NO BEFORE JOURNAL\s*\,*\s*", "to": ""},
+		{"from" : "NO AFTER JOURNAL\s*\,*\s*", "to": ""},
+		{"from" : "NO BEFORE JOURNAL", "to": ""},
+		{"from" : "NO AFTER JOURNAL", "to": ""},
+		{"from" : "CHECKSUM\s*=\s*DEFAULT\s*(,|)", "to": ""},
+		{"from" : ",(.*?)NO LOG", "to": ""},
+		{"from" : ",(.*?)CHECKSUM = DEFAULT,", "to": ""},
+		{"from" : ",(.*?)CHECKSUM = DEFAULT", "to": ""},
+		{"from" : "CREATE JOIN INDEX", "to": "CREATE TEMPORARY TABLE"},
+		{"from" : "^(\s*?)REPLACE(\s+?)VIEW", "to": "CREATE OR REPLACE VIEW"},
+		{"from" : "^(\s*?)CREATE VIEW", "to": "CREATE OR REPLACE VIEW"},
+		{"from" : "\sBLOB", "to" : " BINARY"},
+		{"from" : "\sVARBINARY", "to" : " BINARY"},
+		{"from" : "\sBYTE\b", "to" : " BINARY"},
+
+		{"from" : "LOCKING(.+?)FOR\s+ACCESS\s+MODE", "to": ""},
+		{"from" : "LOCKING(.+?)FOR ACCESS", "to": ""},
+		{"from" : "LOCK ROW FOR ACCESS", "to": ""},
+		{"from" : "FREESPACE = 0 PERCENT,", "to": ""},
+		{"from" : "END TRANSACTION;", "to": "COMMIT;"},
+		{"from" : "current_date - (\d+)", "to": "dateadd('DAY',-$1,current_date)"},
+		{"from" : "(\w+\.\w+?DT) - (\d+)", "to": "dateadd('DAY',-$2,$1)"},
+		{"from" : "(\w+\.\w+?DT) + (\d+)", "to": "dateadd('DAY',$2,$1)"},
+
+		{"from" : "VARBYTE", "to" : "VARBINARY"},
+		{"from" : "EXCEPT ALL", "to" : "MINUS"},
+
+
+		{"from" : "EXTRACT\(DAY FROM", "to" : "DAY("},
+		{"from" : "EXTRACT\(HOUR FROM", "to" : "HOUR("},
+		{"from" : "EXTRACT\(MINUTE FROM", "to" : "MINUTE("},
+
+		{"from" : "CREATE TABLE ([$|\S]+?) AS ([$|\S]+?) WITH NO DATA", "to" : "CREATE TABLE $1 LIKE $2"},
+		{"from" : "\'(\d\d)\'XC", "to" : "TRY_HEX_DECODE_STRING($1)"},
+		{"from" : "CHARACTER SET LATIN NOT CASESPECIFIC", "to" : ""}, //no collation feature
+		{"from" : "CHARACTER SET LATIN NOT CS", "to" : ""},
+		{"from" : "CHARACTER(\s+)SET LATIN", "to" : ""},
+		{"from" : " NOT CS ", "to" : " "},
+		{"from" : " NOT CS$", "to" : " "},
+		{"from" : " CS ", "to" : " "},
+		{"from" : " CS,", "to" : ","},
+		{"from" : " CS$", "to" : " "},
+		{"from" : "WITH\s+DATA", "to" : ""},
+		{"from" : "COLLECT STATISTICS.*;", "to" : ""},
+		{"from" : "COLLECT STATS.*;", "to" : ""},
+		{"from" : "COLLECT STATS.*", "to" : ""},
+		{"from" : "update command options using c off\s;", "to" : ""},
+		{"from" : "NOT NULL WITH DEFAULT", "to" : ""},
+		{"from" : "CHARACTER SET UNICODE NOT CASESPECIFIC", "to" : ""},
+		{"from" : "\(NOT CASESPECIFIC\)", "to" : ""},
+		{"from" : "NOT CASESPECIFIC", "to" : ""},
+		{"from" : "\(CASESPECIFIC\)", "to" : ""},
+		{"from" : "\sCASESPECIFIC", "to" : ""},
+		{"from" : "CHARACTER SET UNICODE", "to" : ""},
+		{"from" : "USING UNICODE_TO_LATIN", "to" : ""},
+
+		//{"from" : "__EXPRESSION__\s(FORMAT '(9+)')", "to" : "LPAD(__EXPRESSION__,__LENGTH__,'0')"
+
+		//{"from" : "TRIM\((\S+) \(FORMAT'9999999999'\)\)","to": "TRIM(LPAD($1,10,'0'))"},
+		//{"from" : "CAST\((\w+) AS FORMAT 'HH:MI:SS'\)", "to" : "TO_CHAR($1,'HH:MI:SS')"},
+		//{"from" : "CAST\((\w+) AS FORMAT 'YYYY-MM-DD'\)", "to" : "TO_CHAR($1,'YYYY-MM-DD')"},
+		{"from" : "([\w.]+)\s*\(\s*FORMAT '99999'\s*\)", "to" : "LPAD($1,5,'0')"},
+		{"from" : "CAST\s*\(\s*\(\s*([\w.]+)\s*\(\s*FORMAT\s+'YYYY-MM-DD'\s*\)\s*\)\s*AS\s+CHAR\s*\(\s*10\s*\)\s*\)", "to" : "TO_CHAR($1,'YYYY-MM-DD')"},
+
+		{"from" : "LOGGING ALL ERRORS WITH NO LIMIT", "to" : ""},
+		{"from" : "NO\s+PRIMARY\s+INDEX", "to" : ""},
+
+		//{"from" : "\(DATE, FORMAT 'MM\/DD\/YYYY'\)", "to" : ""},
+		//{"from" : "\(FORMAT 'Z\((\d+)\)'\)", "to" : ""},
+		//{"from" : "DATE FORMAT 'YY/MM/DD'", "to" : "DATE"},
+		//{"from" : "FORMAT '99999'", "to" : "INT"},
+		//{"from" : "DATE(\s*?)FORMAT 'YYYY-MM-DD'", "to" : "DATE"},
+		//{"from" : "DATE(\s*?)FORMAT '(.+?)'", "to" : "DATE"},
+		//{"from" : "TIMESTAMP\(6\)(\s*?)FORMAT '(.+?)'", "to" : "TIMESTAMP(6)"},
+		//{"from" : "DATE FORMAT 'MM/DD/YYYY'", "to" : "DATE"},
+		//{"from" : "FORMAT 'ZZ9.99'", "to" : "VARCHAR(6)"},
+		//{"from" : "FORMAT 'YY/MM/DD' NOT NULL", "to" : ""},
+		{"from" : "MAXIMUM ", "to" : "MAX "},
+		{"from" : "MAXIMUM\(", "to" : "MAX("},
+		{"from" : "\(NOT CS\)", "to" : ""},
+		{"from" : "\(CS\)", "to" : ""},
+		//{"from" : "TRANSLATE\((.*?)\)", "to" : "$1"},
+		//{"from" : "\(FORMAT '9\(2\)'\)", "to" : ""},
+		{"from" : "CHARACTER_LENGTH", "to" : "LENGTH"},
+
+		{"from" : "AS FORMAT 'YYYY-MM-DD'", "to": " AS DATE"},
+		{"from" : "AS FORMAT 'HH:MI:SS'", "to": " AS TIMESTAMP(6)"},
+		{"from" : "FROM (\d+) FOR (\d)", "to" : ", $1, $2"}, //used in SUBSTRING function
+		{"from" : "FROM(\s+)(\d+)(\s+)FOR(\s+)(\d)", "to" : ", $2, $5"}, //used in SUBSTRING function
+		{"from" : "FROM (\d+)\)", "to" : ", $1)"}, //used in SUBSTRING function without 3rd arg
+
+
+
+		{"from" : "TRIM\(LEADING'", "to" : "TRIM(LEADING '"},
+		{"from" : "TRIM\(TRAILING'", "to" : "TRIM(TRAILING '"},
+		{"from" : "TRIM\(LEADING ", "to" : "TRIM_LEADING("},
+		{"from" : "TRIM\(TRAILING ", "to" : "TRIM_TRAILING("},
+
+
+
+		{"from" : "OREPLACE", "to" : "REPLACE"},
+		{"from" : "OTRANSLATE", "to" : "REPLACE"},
+
+		{"from" : "'\$           0'", "to":"'$'"},
+		//{"from" : "\((.+) MOD (\w*)\)", "to":"MOD ( $1, $2 )"},
+		{"from" : " MOD ", "to":" % "},
+
+		{"from" : "DEFAULT(\s+)MERGEBLOCKRATIO", "to" : "$1"},
+		{"from" : "DEFAULT DATE", "to" : "DEFAULT CURRENT_DATE"},
+		//{"from" : "PARTITION(\s+)BY(\s+)CASE_N", "to" : "PARTITION_BY_CASE_N"},
+		{"from" : "PARTITION BY RANGE_N", "to" : "PARTITION_BY_RANGE_N"},
+		{"from" : "PARTITION\s+BY", "to" : "PARTITION_BY", "statement_categories": ["TABLE_DDL"]},
+		{"from" : "CONSTRAINT\s(.*)CHECK\s", "to" : ",CONSTRAINT_CHECK ", "statement_categories": ["TABLE_DDL"]},
+		{"from" : "\sCHECK\s", "to" : " CONSTRAINT_CHECK ", "statement_categories": ["TABLE_DDL"]},
+		{"from" : ",CHECK\s", "to" : ",CONSTRAINT_CHECK ", "statement_categories": ["TABLE_DDL"]},
+		{"from" : "FOREIGN KEY", "to" : "FOREIGN_KEY", "statement_categories": ["TABLE_DDL"]},
+		{"from" : "ORDER BY VALUES", "to" : "ORDER_BY_VALUES", "statement_categories": ["TABLE_DDL"]},
+		{"from" : "REFERENCES(\s*)(.*)(\s*)\(", "to" : "REFERENCES(", "statement_categories": ["TABLE_DDL"]},
+
+		{"from" : "EFF_PERIOD\s*PERIOD\(DATE\)\s*FORMAT 'YY\/MM\/DD' AS VALIDTIME", "to" : "EFF_BEGIN_DT DATE, EFF_END_DT DATE"},
+
+		{"from" : "EFF_PERIOD\s*PERIOD\(DATE\)\s*AS VALIDTIME", "to" : "EFF_BEGIN_DT DATE, EFF_END_DT DATE"},
+		{"from" : "VALID_DT\s*PERIOD\(DATE\)\s*AS VALIDTIME", "to" : "VALID_BEGIN_DT DATE, VALID_END_DT DATE"},
+
+		{"from" : "AU_TS_PERIOD\s*PERIOD\(TIMESTAMP\(0\)\) NOT NULL AS VALIDTIME", "to" : "AU_BEGIN_TS TIMESTAMP(0), AU_END_TS TIMESTAMP(0)"},
+		{"from" : "EFFTS_PERIOD\s*PERIOD\s*\(TIMESTAMP\(6\)\) WITH TIME ZONE\) NOT NULL AS VALIDTIME", "to" : "EFFTS_BEGIN_TS TIMESTAMP(6), EFFT_END_TS TIMESTAMP(6)"},
+
+		{"from" : "PERIOD\(TIMESTAMP\(0\)\) NOT NULL AS VALIDTIME", "to" : "timestamp(0) default current_timestamp"},
+		{"from" : "PERIOD\(DATE\)(\s+)AS VALIDTIME", "to" : "timestamp(0)"},
+		{"from" : "PERIOD\(DATE\) FORMAT 'YY\/MM\/DD' AS VALIDTIME", "to" : "timestamp(0)"},
+		{"from" : "PERIOD\(TIMESTAMP\(6\) WITH TIME ZONE\) NOT NULL AS TRANSACTIONTIME", "to" : "timestamp(6) default current_timestamp"},
+		//{"from" : "CURRENT_TIMESTAMP", "to" : "CAST(CURRENT_TIMESTAMP as TIMESTAMP_NTZ)"},
+		{"from" : "current_timestamp at 'america eastern'", "to" : "CURRENT_TIMESTAMP"},
+
+		{"from" : "PERIOD\(DATE\)", "to" : "DATE"},
+
+		//date arithmetic
+		{"from" : "DAY\(4\) TO MINUTE", "to" : ""},
+
+
+		{"from" : " UPPERCASE ", "to": ""},
+		{"from" : "NONSEQUENCED VALIDTIME", "to" : ""},
+		{"from" : "COMPRESS '(.+)'","to": ""},
+		{"from" : "COMPRESS\s*\(", "to" : "COMPRESS_SUPPRESS("},
+		{"from" : "COMPRESS 'SAN'","to": ""},
+		{"from" : "COMPRESS 1737","to": ""},
+		{"from" : "COMPRESS 888", "to": ""},
+		{"from" : "COMPRESS 'N'", "to": ""},
+		{"from" : "COMPRESS 'M'", "to": ""},
+		{"from" : "COMPRESS ,","to": ","},
+		{"from" : "COMPRESS '6'","to": ""},
+		{"from" : "COMPRESS 'P'","to": ""},
+		{"from" : "COMPRESS 1 ,","to": ","},
+		{"from" : "COMPRESS 0 ,","to": ","},
+		{"from" : "COMPRESS 0,","to": ","},
+		{"from" : "COMPRESS 0(\s+)$","to": ""},
+		{"from" : "COMPRESS .0000","to": ""},
+		{"from" : "COMPRESS \.00","to": ""},
+		{"from" : "COMPRESS -1(\s*),(\s*)$","to": ","},
+		{"from" : "COMPRESS ([\d.]+)(\s*),", "to": ","},
+		{"from" : "COMPRESS (\d+)\.(\d+)(\s*)", "to": ""},
+		{"from" : "COMPRESS 0\b","to": ""},
+		{"from" : "COMPRESS(\s+)0(\s+),", "to": ",", "statement_categories": ["TABLE_DDL"] },
+		{"from" : "COMPRESS(\s+)0$", "to": "", "statement_categories": ["TABLE_DDL"] },
+		{"from" : "COMPRESS ' ',", "to": ",", "statement_categories": ["TABLE_DDL"] },
+		{"from" : "COMPRESS(\s*),", "to": ",", "statement_categories": ["TABLE_DDL"] },
+		{"from" : "COMPRESS(\s*)\)", "to": ")", "statement_categories": ["TABLE_DDL"] },
+		{"from" : "COMPRESS\s*'\s*?',", "to": "", "statement_categories": ["TABLE_DDL"] },
+		{"from" : "DATE\s+FORMAT\s+'YY\/MM\/DD'", "to" : "DATE",  "statement_categories": ["TABLE_DDL"] },
+		{"from" : "DATE\s+FORMAT\s+'YYYY-MM-DD'", "to" : "DATE",  "statement_categories": ["TABLE_DDL"] },
+		{"from" : "\bformat\s*'(.*?)'", "to" : "",  "statement_categories": ["TABLE_DDL"] },
+		{"from" : "UNIQUE PRIMARY INDEX", "to": "UPI"},
+		{"from" : "PRIMARY INDEX", "to": "PRIM_IDX"},
+		{"from" : "CREATE UNIQUE INDEX .*\((.*?)\).*;", "to": ""},
+		{"from" : "CREATE INDEX \((.*?)\).*;", "to": ""},
+		{"from" : "UNIQUE\s+INDEX", "to": "UNK_IDX"},
+
+		//{"from" : "\bINDEX\b\(", "to": "CREATE_INDEX("},
+
+
+		{"from" : "INTERVAL '(\d+)' DAY", "to": "$1"},
+		{"from" : "INTERVAL\s+'([0-9.]+)'\s+SECOND", "to": "INTERVAL '$1 SECOND'"},
+
+		//casting
+		{"from" : "\( (\d+)\)", "to": "($1)"},
+		{"from" : "\(VARCHAR\((\d+)\)\)", "to" : "::VARCHAR($1)"},
+		{"from" : "\(CHAR\((\d+)\)\)", "to" : "::CHAR($1)"},
+		{"from" : "\((\s*)SMALLINT(\s*)\)", "to" : "::SMALLINT"},
+		{"from" : "\(INTEGER\)", "to" : "::INTEGER"},
+		{"from" : "\(DATE\)", "to" : "::DATE"},
+		{"from" : "\(DECIMAL\(([\d|,]+)\)\)", "to" : "::DECIMAL($1)"},
+
+		//{"from" : "^\s*,(.+)\(VARCHAR\((\d+\))\)", "to" : ",CAST($1 as VARCHAR($2)"},
+		//{"from" : "^\s*,(.+)\(\s+CHAR\((\s+\d+\))\)", "to" : ",CAST($1 as CHAR($2)"},
+
+		{"from" : "\(BYTEINT\)", "to" : ""},
+		{"from" : "AS BYTEINT", "to" : "AS INT"},
+
+		//************ constraints ************.  example:
+
+		{"from" : "IN .*", "to" : "", "statement_categories": ["TABLE_DDL_LIKE"]},
+
+		//************ Comments ************
+		{"from" : "COMMENT ON ([\s|&\w]+).([\s|&\w]+) '(.*)'", "to" : "COMMENT ON__PARSED__TABLE $1.$2 IS '$3'"},
+		{"from" : "COMMENT ON ([\s|\$\w]+).([\s|\$\w]+) '(.*)'", "to" : "COMMENT ON__PARSED__TABLE $1.$2 IS '$3'"},
+		{"from" : "COMMENT ON ([\s|&\w]+).([\s|&\w]+).([\s|&\w]+) '(.*)'", "to" : "COMMENT ON COLUMN $1.$2.$3 IS '$4'"},
+		{"from" : "__PARSED__", "to" : " "},
+
+		{"from" : "DELETE(.*) ALL\b", "to" : "DELETE$1"},
+
+		//{"from" : "DELETE(\s+)\&(.*)", "to" : "DELETE FROM &$2"},
+		{"from" : "SYSLIB\.ISO8601_TO_DT", "to" : "TRY_TO_DATE"},
+		{"from" : "SYSLIB\.ISO8601_TO_TS", "to" : "TRY_TO_TIMESTAMP"},
+		{"from" : "REPLACE_CHARS", "to" : "REPLACE"},
+		{"from" : "CHAR_LENGTH", "to" : "LENGTH"},
+
+		{"from" : "FLOAT\s+\.\S+ \d+\b", "to" : "FLOAT", "statement_categories": ["TABLE_DDL"]},
+
+		//DBC objects, database catalog strings
+		
+		{"from" : "\bDBC\.TABLES\b", "to" : "INFORMATION_SCHEMA.TABLES"},
+		{"from" : "\bDBC\.COLUMNS\b", "to" : "INFORMATION_SCHEMA.COLUMNS"},
+		{"from" : "\bdatabasename\b", "to" : "TABLE_CATALOG"},
+		{"from" : "\btablename\b", "to" : "TABLE_NAME"}
+
+		//upcasing of SCHEMA.TABLE
+		//,{"from" : "\s(\w+)\.(\w+)", "to" : " DUMMY_UPCASE($1.$2)"}
+		//,{"from" : "\s(\w+)\.(\w+)", "to" : " DUMMY_LOWCASE($1.$2)"}
+	],
+	"suppress_lines_starting_with": ["WHENEVER","ALTER SESSION","NOLOGGING","NOMONITORING","PARALLEL", "EXECUTE DBMS_OUTPUT.ENABLE",
+		//"\.IF", "\.LABEL", // keep these in, we will implement python
+		".\QUIT", "\.EXPORT", "\.LOGOFF"
+		],
+	"suppress_lines_containing": ["LOGMECH"],
+	"line_suppression_behavior":"COMMENT", //choices: COMMENT or ELIMINATE
+	
+	"block_subst" : [
+		{"from" : "DATABLOCKSIZE(.*?)BYTES\s*(,\s*|)","to" : ""},
+		{"from" : "__EXPRESSION__\s(FORMAT '(9+)')", "to" : "LPAD(__EXPRESSION__,__LENGTH__,'0')"},
+		{"from" : "\)\s*WITH NO DATA", "to" : " WHERE 1=2)"},
+		{"from" : "\(\s*TITLE\s+'\w+'\s*\)", "to" : ""}, //blank out TITLE spec
+		{"from" : "TITLE\s*'.*?'", "to" : "", "statement_categories": ["TABLE_DDL"]},
+		//{"from": "^\s*UPDATE(.*?)FROM(.*;)", "parse_method":"convert_update_to_merge", "statement_categories": ["WRITE_DML"]},
+		{"from" : "\)__GAMMA_NL__\s*WITH NO DATA", "to" : " WHERE 1=2)"}, //use __GAMMA_NL__ for newline pattern
+		{"from" : "CREATE INDEX \((.*?)\).*;", "to": "", "statement_categories": ["CREATE_INDEX"] },
+		{"from" : "VALIDTIME .*\(SELECT.*\)(.*?)(SELECT?)", "to" : "SELECT"},
+		{"from" : "__EXPRESSION__\s\(FORMAT\s*'9\(18\)'\)", "to" : "LPAD(__EXPRESSION__,18,'0')"},
+		{"from" : "__EXPRESSION__\s\(FORMAT\s*'999999'\)", "to" : "LPAD(__EXPRESSION__,6,'0')"},
+		{"from" : "__EXPRESSION__\s\(FORMAT\s*'9\(2\)'\s*\)", "to" : "LPAD(__EXPRESSION__,2,'0')"},
+		{"from" : "PRIM_IDX\s+\S+\s*\(.+?\)", "to": "", "statement_categories": ["TABLE_DDL"]}, //get rid of named primary index
+
+		//{"from" : "DELETE\b(.*)\bWHERE\b(.*)", "catch_implicit_object_reference" : "1", "to" : "DELETE$1\nUSING %IMPLICIT_OBJECT_REFERENCE%\nWHERE$2", "number_valid_tokens" : "4", "first_match" : "1"},
+		{"from" : "(DELETE.*?FROM.*)\,(.*WHERE.*)", "to": "$1 USING $2"},
+		{"from" : "(DELETE.*?FROM\s+([\w\{\}\.\$]+)\s*(?-1)?\s*)\,(\s*(?-2)\s*(?-2)?;)", "to": "$1 USING $3"},
+		//{"from" : "(DELETE\s*FROM)\s*(.*?)\,\s*(.*)\s*(.*\s*.*\s*.*\s*\;)", "to" : "$1 $2 USING $3 $4", "first_match" : "1" },
+		{"from" : "^(\s*)(SELECT\s+COUNT\(\*\).*)", "to": "$1set ret = get_rowcount_from_snowsql << EO_STMT\n$2\nEO_STMT\nif ret == 0\n\texit 0\nfi", "relative_fragment_offset" : "1,2", "relative_fragment_pattern" : "ACTIVITYCOUNT = 0"},
+		//{"from" : "^\s*SELECT(.*)", "force_alias_usage" : "1", "first_match" : "1"},
+
+		{"from" : "(.*)\s*\)\s*;\s*", "to" : "$1)\nUSING DELTA;\n", "statement_categories": ["TABLE_DDL"], "first_match" : "1"},
+
+		{"from" : "dummy line", "to" : "some dummy line"}
+	],
+
+	"function_subst" : [
+		//{"from" : "DUMMY_UPCASE", "output_template" : "$1", "upcase_args" : ["1"]},
+		//{"from" : "DUMMY_LOWCASE", "output_template" : "$1", "lowcase_args" : ["1"]},
+		//{"from": "CONSTRAINT_CHECK2", "to": "__BLANK__"},
+		{"from": "CONSTRAINT_CHECK", "to": "__BLANK__"},
+		{"from": "FOREIGN_KEY", "to": "__BLANK__"},
+		{"from": "REFERENCES", "to": "__BLANK__"},
+		{"from": "PARTITION_BY_CASE_N", "to": "__BLANK__"},
+		{"from": "PARTITION_BY_RANGE_N", "to": "__BLANK__"},
+		{"from": "PARTITION_BY", "to": "__BLANK__"},
+
+		{"from": "TRIM_LEADING", "to" : "LTRIM", "arg_token_output" : "2,1", "split_string" : "FROM" },
+		{"from": "TRIM_TRAILING", "to" : "RTRIM", "arg_token_output" : "2,1", "split_string" : "FROM" }, //tells the parser to get tokens from args and place them inside the new call
+
+		{"from": "UPI", "to": "PRIMARY KEY", "statement_categories" : ["TABLE_DDL"], "placement" : "append_inside_ddl"},
+		{"from": "UPI", "to": "ALTER TABLE __LAST_OBJECT_CREATED__ ADD PRIMARY KEY", "statement_categories" : ["TABLE_DDL_LIKE","TABLE_DDL_AS_SELECT"], "placement" : "append_after_ddl"},
+		{"from": "UNK_IDX", "to": "UNIQUE", "statement_categories" : ["TABLE_DDL"], "placement" : "append_inside_ddl"},
+		{"from": "UNK_IDX", "to": "ALTER TABLE __LAST_OBJECT_CREATED__ ADD UNIQUE", "statement_categories" : ["TABLE_DDL_LIKE","TABLE_DDL_AS_SELECT"], "placement" : "append_after_ddl"},
+		{"from": "CREATE_INDEX", "to": "__BLANK__", "statement_categories" : ["TABLE_DDL","TABLE_DDL_LIKE","TABLE_DDL_AS_SELECT"]},
+		{"from": "PRIM_IDX", "to": "__BLANK__"},
+		{"from": "INDEX", "to": "__BLANK__", "statement_categories" : ["TABLE_DDL","TABLE_DDL_LIKE","TABLE_DDL_AS_SELECT"]},
+		{"from": "ORDER_BY_VALUES", "to": "__BLANK__", "statement_categories" : ["TABLE_DDL","TABLE_DDL_LIKE","TABLE_DDL_AS_SELECT"]},
+
+
+		{"from": "TRANSLATE", "to" : "__ELIMINATE_CALL__"}, //get rid of the function call with the parens, but leave the inner part
+		{"from": "BEGIN", "to" : "__ELIMINATE_CALL__"},
+		{"from": "END", "to" : "__ELIMINATE_CALL__"},
+
+		{"from" : "INSTR", "to": "REGEXP_INSTR"},
+		{"from": "STRTOK", "to" : "SPLIT_PART"},
+
+		{"from": "TSDIFFDAY", "to": "DATEDIFF", "arg_placement" : { "1":"3||'DAY'", "2":"2", "3":"1" } },
+		{"from": "TSDIFFSEC", "to": "DATEDIFF", "arg_placement" : { "1":"3||'SECOND'", "2":"2", "3":"1" } },
+
+		//in arg_placement section, the key represents the target arg order, value represents the source arg order or default
+		{"from": "TRUNC", "output_template": "DATE_TRUNC('DD',$1)"  },
+		{"from" :"POSITION", "output_template" : "INSTR($2,$1)"},
+		//{"from": "MONTHS_BETWEEN", "to": "DATEDIFF", "arg_placement" : { "1":"3||'MONTH'", "2":"2", "3":"1" } },  //swap args
+//		{"from": "MONTHS_BETWEEN", "output_template": "DATEDIFF('MONTH', $2, $1)"},  //swap args
+
+		
+
+		{"from": "COMPRESS", "to": "__BLANK__"},
+		{"from": "COMPRESS_SUPPRESS", "to": "__BLANK__"}
+		//{"from": "TO_DATE", "to" : "TO_TIMESTAMP"}
+		//{"from": "ADD_MONTHS"}, -- as is
+		//{"from": "LAST_DAY"} -- as is
+	],
+
+	"tag_capture" :
+		{	//format: descriptive_key : array of regex patterns
+			"COMPRESS" : ["COMPRESS"], //COMPRESS([\s|,(]|$)
+			"TEMPORAL" : ["VALIDTIME"],
+			"SYSLIB" : ["SYSLIB\."],
+			"PERIOD_FUNCTIONS" : ["PERIOD(\s*)\("],
+			"BINARY_DATATYPES" : ["BYTEINT", "VARBYTE"],
+			"NATIVE_CASTING" : ["\(VARCHAR\((\d+)\)\)", "\INT\)", "\(CHAR\((\d+)\)\)"],
+			"FORMAT_SPEC": ["FORMAT "],
+			"FLOAT DEFAULT TIME" : ["FLOAT(\s+?)DEFAULT(\s+?)TIME"],
+			"STRING_TRIMMING" : ["LEADING", "TRAILING"],
+			"UNIQUE_PRIMARY_INDEX" : ["UNIQUE\s+PRIMARY\s+INDEX"],
+			"UNIQUE_INDEX" : ["UNIQUE\s+INDEX"],
+			"CROSS JOIN" : ["CROSS(\s+)JOIN"],
+			"RECURSIVE" : ["RECURSIVE"],
+			"LOADER CALL" : ["FAST_LOAD"],
+			"DBC OBJECTS" : ["DBC\."],
+			"CASESPECIFIC" : ["CASESPECIFIC"],
+			"QUALIFY" : ["QUALIFY"],
+			"GOTO" : ["THEN GOTO", "THEN\s+\.GOTO"]
+
+		},
+	//enable column parsing for: manipulate on 1 column at a time, it is safer; for lin-place aliases, swap column order; format functionality handling
+	"column_level_parsing" : ["VIEW_DDL", "TABLE_DDL_AS_SELECT", "TABLE_DDL"],
+	"adjust_format_tokens" : "1",
+	"adjust_native_casting" : "1", //yet to be implemented
+	"embedded_sql_var_prefix" : "&"
+}
+
+

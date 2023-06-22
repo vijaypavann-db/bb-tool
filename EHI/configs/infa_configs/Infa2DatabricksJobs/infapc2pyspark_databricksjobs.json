@@ -1,0 +1,382 @@
+{
+	//"inherit_from" : "somebasefile.json",
+	"header": "#Code converted on %CONVERTER_TIMESTAMP%~
+import os\nfrom pyspark.sql import *~
+from pyspark.sql.functions import *~
+from pyspark.sql.types import *~
+from Mapplets import Mapplets~
+from pyspark import SparkContext;~
+from pyspark.sql.session import SparkSession~
+from datetime import datetime~
+from PySparkBQWriter import *~
+bqw = PySparkBQWriter()~
+bqw.setDebug(True)~
+~
+sc = SparkContext('local')~
+spark = SparkSession(sc)~
+~
+# Set global variables~
+starttime = datetime.now() #start timestamp of the script~
+",
+
+	"footer": "quit()",
+	"script_extension": "py",
+	//"pre_node_line" : "# Processing node %NODE_NAME%, type %NODE_TYPE%\n# COLUMNS: %COLUMN_LIST%",
+	"pre_node_line" : "# Processing node %NODE_NAME%, type %NODE_TYPE% %ADDITIONAL_COMMENT%\n# COLUMN COUNT: %COLUMN_COUNT%", //# COLUMNS %COLUMN_LIST%
+	"post_node_line" : "",
+	"explicit_aliasing" : "0",
+	"skip_rowid_generation" : "0", // omits generation of sys_row_id
+	//"additional_trailing_fields" : ["load_cntl_no"],
+	"column_aliasing_df_naming_pattern" : "PRE_%DF%", // in case column aliases are used, like prefixes and suffixes, create an additional dataframe with this name
+	"implied_target_fields_enable_alpha_sort" : "1",
+
+	"infa_rename_col_snippets" : "1",
+	//"force_multi_source_join_type" : "left_join",
+	"CUSTOM_CONVERTER_MODULES" : ["!BB_CONFIG_CONVERTER!/infa2pyspark_ext.pl"],
+	"field_rename_df_pattern" : "%DF%_TMP",
+	"field_rename_df_comment" : "#Conforming layout of Hive to InfaCloud for %DF%",
+	"ignore_connection_profiles" : "1", //if ON, will blank out %CONNECTION_PROFILE%. prefixes coming from agnostic layer
+
+	"sql_converter_config_file" : "!BB_CONFIG_CONVERTER!/teradata2databricks.json",
+
+	"remove_expression_comments" : "1", // removes inline comments in expressions before converting them
+
+	"exclude_from_lit_wrapping" : [ //these tokens will be excluded from lit wrapping
+		"YYYY-MM-DD",
+		"MM\/DD\/YYYY"
+	],
+
+	"exclude_function_args_from_lit_wrapping" : [ //prevents wrapping of constants into lit for these functions
+		"REPLACESTR",
+		"RPAD",
+		"SUBSTR",
+		"INSTR"
+	],
+
+	"default_indent" : {
+		"header" : "",
+		"body" : "",
+		"footer" : ""
+	},
+	
+	// tell converter which component types to enable casting on
+	// used in conjunction with "datatype_cast_mapping" spec below
+	"enabled_datatype_casting_components" : ["normalizer", "target"],
+
+	"datatype_cast_mapping" : { //tells converter what string to use during casting. tokens %LENGTH% and %SCALE% will be replaced at conversion time
+		"decimal" : ".cast('decimal(%LENGTH%,%SCALE%)')",
+		"string" : ".cast(StringType())",
+		"char" : ".cast(StringType())",
+		"varchar" : ".cast(StringType())",
+		"numeric" : ".cast(LongType())",
+		"timestamp" : ".cast(TimestampType())"		
+	},
+		
+	"body_wrap" : {
+		// "before" : "try:\n\n",
+		// "after" : "\n\nexcept OSError:\n\tprint('Error Occurred')\n"
+	},
+	
+	"code_indent" : "            ", //general code indent - 12 spaces
+	"multiline_stmt_break" : " \ ",
+	"null_assignment" : "lit(None)",
+	"sort_function" : "sort", //goes into the sorter node
+
+	"line_subst" : [
+		//functions that just need lower-casing:
+		{"from" : "\bUPPER\b", "to" : "upper", "case_sensitive_match" : 1},
+		{"from" : "\bLOWER\b", "to" : "lower", "case_sensitive_match" : 1},
+		{"from" : "\bRPAD\b", "to" : "rpad", "case_sensitive_match" : 1},
+		{"from" : "\bMD5\b", "to" : "md5", "case_sensitive_match" : 1},
+		{"from" : "\bLTRIM\b", "to":"ltrim", "case_sensitive_match" : 1},
+		{"from" : "\bRTRIM\b", "to":"rtrim", "case_sensitive_match" : 1},
+		{"from" : "\bRPAD\b", "to":"rpad", "case_sensitive_match" : 1},
+		{"from" : "\bLPAD\b", "to":"lpad", "case_sensitive_match" : 1},
+		{"from" : "\bTO_DATE\b", "to":"to_date", "case_sensitive_match" : 1},
+		{"from" : "\bCOUNT\b", "to":"count", "case_sensitive_match" : 1},
+		{"from" : "\bABS\b", "to":"abs", "case_sensitive_match" : 1},
+		{"from" : "\bCHR\b", "to":"chr", "case_sensitive_match" : 1},
+		{"from" : "\bSUM\b", "to":"sum", "case_sensitive_match" : 1},
+		{"from" : "\bTRUNC\b", "to":"trunc", "case_sensitive_match" : 1},
+		{"from" : "\bROUND\b", "to":"round", "case_sensitive_match" : 1},
+		{"from" : "\bINSTR\b", "to":"instr", "case_sensitive_match" : 1},
+		{"from" : "\bMAX\b", "to":"max", "case_sensitive_match" : 1},
+		{"from" : "\bLAST_DAY\b", "to":"last_day", "case_sensitive_match" : 1},
+		{"from" : "\bLAST\b", "to":"last", "case_sensitive_match" : 1},
+		{"from" : "\bFLOOR\b", "to":"floor", "case_sensitive_match" : 1},
+		{"from" : "\bMOD\b", "to":"mod", "case_sensitive_match" : 1},
+		{"from" : "\bLENGTH\b", "to":"length", "case_sensitive_match" : 1},
+		
+
+		//
+		{"from" : "\bISNULL", "to" : "TEMP_ISNULL"},
+		{"from" : "\bNULL\b", "to" : "lit(None)"},
+
+		{"from" : "REPLACESTR\s*\(\s*\d\s*," , "to" : "regexp_replace("},
+		{"from" : "SYSDATE" , "to" : "current_date()"},
+		{"from" : "\$\$(\w+)", "to" : "os.environ.get('$1')"},
+		{"from" : "\$(\w+)", "to" : "os.environ.get('$1')"},
+		{"from" : "true", "to": "True", "first_match":"1"},
+		{"from" : "\bor\b" , "to" : "|", "exclude_categories" : ["PYSPARK_FILTER"]},
+		{"from" : "\band\b" , "to" : "&", "exclude_categories" : ["PYSPARK_FILTER"]},
+
+		{"from" : "\=\s\=", "to" : "=="},
+		{"from" : "SYSTIMESTAMP", "to" : "current_timestamp()"},
+		{"from" : "SESSSTARTTIME", "to" : "(to_timestamp(lit(starttime)))"},
+		{"from" : "YYYY-MM-DD", "to" : "yyyy-MM-dd", "case_sensitive_match" : 1}, // case_sensitive_match does not support $-tokens
+		
+		//update strategy - assign numeric values.
+		{"from" : "DD_INSERT", "to" : "0"},
+		{"from" : "DD_UPDATE", "to" : "1"},
+		{"from" : "DD_DELETE", "to" : "2"},
+		{"from" : "DD_REJECT", "to" : "3"}
+	],
+
+	"keep_single_quote_in_strings" : 1, //deprecated
+	"skip_variable_token_prefixes" : 1, //infa specific, keep it on
+	
+	"operator_to_function_subst" : { //converting operators to functions
+		"||" : "concat"
+	},
+
+	"interpolated_patterns" : {
+		"os.environ.get\((.*?)\)" : "{os.env.get($1)}",
+		"os.env.get" : "os.environ.get"
+	},
+
+	"block_subst" :[
+		//{"from" : "\bdecode\((.*?)\)" , "extension_call" : "::convert_decode"}
+	],
+
+	"function_subst" : [
+		// note: if we need to do any object oriented calls, like COL.cast(args), please use space __DOT__ space instead of a dot
+		{"from" : "DATE_DIFF", "output_template" : "datediff($1,$2)"},
+		{"from" : "SUBSTR", "to" : "substring"},
+		{"from" : "ADD_TO_DATE", "output_template" : "date_add($1,$3)", "arg_pattern" : {"2":"'DD'"}},
+		{"from" : "ADD_TO_DATE", "output_template" : "add_months($1,$3)", "arg_pattern" : {"2":"'MM'"}},
+		{"from" : "ADD_TO_DATE", "output_template" : "add_months($1,$3)", "arg_pattern" : {"2":"'MM'"}},
+		{"from" : "ADD_TO_DATE", "output_template" : "add_months($1,$3*12)", "arg_pattern" : {"2":"'YY'"}},
+		{"from" : "DATE_DIFF", "output_template" : "datediff($1,$2)", "arg_pattern" : {"2":"'DD'"}},
+		{"from" : "GET_DATE_PART", "output_template" : "year($1)" ,"arg_pattern" : {"2":"'YY'" }},
+		{"from" : "GET_DATE_PART", "output_template" : "months($1)" ,"arg_pattern" : {"2":"'MM'" }},
+		{"from" : "GET_DATE_PART", "output_template" : "to_date($1)"},
+		{"from" : "IS_NUMBER", "output_template" : "$1 __DOT__ cast('int').isNotNull()"},
+		{"from" : "IS_SPACES", "output_template" : "isspaces($1)"},
+		//{"from" : "SUBSTR", "output_template" : "$1.substring($2,$3)"},
+		{"from" : "TO_DECIMAL", "output_template" : "$1 __DOT__ cast('decimal(12,2)')"},
+		//{"from" : "LENGTH", "output_template" : "length($1)", "first_match":"1"},
+		{"from" : "TO_NUMBER", "output_template" : "$1 __DOT__ cast('int')"},
+		{"from" : "REPLACECHR", "output_template" : "regexp_replace($2,$3,$4)"},
+		{"from" : "REG_MATCH", "output_template" : "$1 __DOT__ rlike($2)"},
+		{"from" : "TO_BIGINT", "output_template" : "$1 __DOT__ cast('int')"},
+		{"from" :"IIF", "output_template": "when(($1),($2))", "num_args" : 2},
+		{"from" :"IIF", "output_template": "when(($1),($2)) __DOT__ otherwise($3)"},
+		{"from" : "TO_CHAR", "output_template" : "$1 __DOT__ cast(StringType())"},
+		{"from" : "TEMP_ISNULL", "output_template" : "$1 __DOT__ isNull()"},
+		{"from" : "DECODE", "extension_call" : "::convert_decode"}
+	],
+
+	"block_post_function_subst" : [
+		{"from" : "\s*__DOT__\s*", "to" : "."}
+	],
+
+	"filter_subst" : {
+		"LAST_N_DAYS" : { "expr" : "(((date_format(%TOKEN1%,'YYYY-MM-dd')==date_sub(date_format(current_timestamp(), 'YYYY-MM-dd'),%TOKEN2%))", "TOKEN1" : "(\w+)\s*=", "TOKEN2" : "\:(\d+)"},
+		" IN\s*\(" : {"expr" : "%TOKEN1%.isin%TOKEN2", "TOKEN1" : "(.+)\s+in", "TOKEN2" : "in\s+(.+)"},
+		" NOT IN\s*\(" : {"expr" : "%TOKEN1%.isin%TOKEN2 == False", "TOKEN1" : "(.+)\s+in", "TOKEN2" : "in\s+(.+)"}
+	},
+
+	//if threshold is met, introduce the registerTempTable code snippet
+	"target_special_handling" : {
+		"column_count_threshold" : "5000",
+		"temp_df_name" : "%DF%_OUTPUT",
+		"final_df_name" : "%DF%_FINAL",
+		"final_df_population" : "sqlContext.sql('select * from %DF%')"
+	},
+
+
+	"commands" : {
+		"READER_FILE_DELIMITED": "spark.read.csv('%PATH%', sep='%DELIMITER%', header='%HEADER%')",
+		"READER_RELATIONAL": "spark.read.jdbc(%CONNECT_STRING%, f\"\"\"%TABLE_NAME%\"\"\", ~
+properties={~
+'user': %LOGIN%,~
+'password': %PASSWORD%,~
+'driver': %DRIVER%})",
+		"READER_DEFAULT": "spark.read.jdbc(%CONNECT_STRING%, f\"\"\"%TABLE_NAME%\"\"\", properties={'user': %LOGIN%, 'password': %PASSWORD%, 'driver': %DRIVER%})",
+		"READER_SALEFORCE": "spark.read.salesforce(%CONNECT_STRING%, f\"\"\"%TABLE_NAME%\"\"\", properties={'user': %LOGIN%, 'password': %PASSWORD%, 'driver': %DRIVER%})",
+		"WRITER_FILE_DELIMITED": "%DF%.write.format('csv').option('header','%HEADER%').mode('overwrite').option('sep','%DELIMITER%').csv('%PATH%')",
+		//"WRITER_RELATIONAL": "%DF%.write.mode('append').jdbc(%CONNECT_STRING%, f\"\"\"%TABLE_NAME%\"\"\", properties={'user': %LOGIN%, 'password': %PASSWORD%, 'driver': %DRIVER%})",
+		"WRITER_RELATIONAL": "bqw.writeDF2BQ(%DF%, '%TABLE_NAME%','%OPERATION%', '%PKLIST%')", //PKLIST is the list of primary key columns, comma separated
+		"WRITER_SALEFORCE": "SomeArray.Append(%DF%)"
+	},
+	
+	// creates a set of withColumnRenamed commands to adjust columns names coming from sources.
+	// reason could be the database engine changing column case, or no column aliasing provided (e.g. count(xyz) without column name)
+	"conform_source_columns" : 1,
+	
+	"df_naming_template" : "%NODE_NAME%", //when not specified, the converter will use NODE_NAME
+	"env_var_extraction": "os.environ.get('%VAR%')",
+	"system_type_class" : {
+		"MySQL" : "RELATIONAL",
+		"Salesforce" : "SALEFORCE",
+		"TOOLKIT" : "RELATIONAL",
+		"ORACLE" : "RELATIONAL",
+		"DEFAULT" : "RELATIONAL", 
+		"FLATFILE":"FILE_DELIMITED"		
+	},
+	"connection_code_translations" : {
+		"Sample Salesforce Connection" : "SALESFORCE"
+	},
+	"SYS_TYPE_CONF" : {
+		"ORACLE" : "ORACLE",
+		"Oracle" : "ORACLE",
+		"DB2" : "DB2",
+//		"Flat File":"FILE_DELIMITED",
+		"FLAT FILE":"FLATFILE"
+
+
+	},
+
+	//////////////// MAPPLETS ////////////////
+	"mapplet_class_name" : "Mapplets",
+	"mapplet_function_name" : "%MAPPLET_NAME%",
+	//"mapplet_func_declaration_code_indent" : "    ", //function declaration code indent for mapplets
+	"mapplet_code_indent" : "    ", //mapplet general code indent - 4 spaces
+	"mapplet_pyspark_code_indent" : "    ", //additional indents for multiline sql statements within mapplets. 4 spaces
+	"mapplet_header_template" : "!BB_CONFIG_WRITER_DIR!/Spark/python_mapplet_header_template.py",
+	"mapplet_input_declaration" : "    def %MAPPLET_NAME%(%INPUT%):", //specifying python function declaration.  But could be javascript in other cases
+	"mapplet_conclusion" : "        #Implementation %MAPPLET_NAME% concluded\n\n",
+	"mapplet_object_var_inject_format" : "\"\"\" + %OBJECT_NAME% + \"\"\"", // use """ + OBJECT_NAME + """.
+	"mapplet_function_invocation" : "Mapplets.%MAPPLET_NAME%(%INPUT%)",
+	"mapplet_instance_prefixes" : ["sc_"] // specifies potential prefixes for mapplets.  This is needed when the converter generates the mapplet code and tries to grab the connection info
+
+	//Workflow conversion
+	,
+	"use_generic_workflow_builder" : 1,
+	"workflow_specs" : { // will kick in only if use_generic_workflow_builder is on
+		"workflow_class" : "CodeGeneration::DatabricksJobs",
+		// any other attributes on the job level (tags)
+		"workflow_component_mapping" : {
+			"SESSION" : {
+				"task_key" : "%COMPONENT_NAME%",
+				"description" : "%DESCRIPTION%",
+				"notebook_task" : {
+			 		"notebook_path" : "notebookTestPath/%MAPPING_NAME%.py"
+			 	}
+			},
+			"WORKLET" : {
+				"task_key" : "%COMPONENT_NAME%",
+				"description" : "%DESCRIPTION%",
+				"spark_python_task" : {
+			 		"python_file" : "somePath/%COMPONENT_NAME%.py"
+			 	}
+			},
+			"COMMAND" : {
+				"task_key" : "%COMPONENT_NAME%",
+				"description" : "%DESCRIPTION%",
+				"spark_python_task" : {
+			 		"python_file" : "somePath/%COMPONENT_NAME%.py"
+			 	}
+			},
+			"CONTROL" : {
+				"task_key" : "%COMPONENT_NAME%",
+				"description" : "%DESCRIPTION%",
+				"spark_python_task" : {
+			 		"python_file" : "somePath/%COMPONENT_NAME%.py"
+			 	}
+			},
+			"DECISION" : {
+				"task_key" : "%COMPONENT_NAME%",
+				"description" : "%DESCRIPTION%",
+				"spark_python_task" : {
+			 		"python_file" : "somePath/%COMPONENT_NAME%.py"
+			 	}
+			},
+			"ASSIGNMENT" : {
+				"task_key" : "%COMPONENT_NAME%",
+				"description" : "%DESCRIPTION%",
+				"spark_python_task" : {
+			 		"python_file" : "somePath/%COMPONENT_NAME%.py"
+			 	}
+			}
+		},
+
+		"default_workflow_attr" : {
+			"tags" : {
+				"cost-center": "engineering",
+				"team": "jobs"
+			},
+			"job_clusters" : [
+				{
+					"job_cluster_key": "auto_scaling_cluster",
+					"new_cluster": {}
+				}
+			],
+			"email_notifications" :  {
+				"on_start": [
+					"user.name@databricks.com"
+				],
+				"on_success": [
+					"user.name@databricks.com"
+				],
+				"on_failure": [
+					"user.name@databricks.com"
+				],
+				"no_alert_for_skipped_runs": false
+			},
+			"timeout_seconds" : 86400,
+			"schedule" : {
+				"quartz_cron_expression": "20 30 * * * ?",
+				"timezone_id": "Europe/London",
+				"pause_status": "PAUSED"
+			},
+			"max_concurrent_runs" : 10,
+			"git_source" : null,
+			"format" : "MULTI_TASK",
+			"access_control_list" : [
+				{
+					"user_name": "jsmith@example.com",
+					"permission_level": "CAN_MANAGE"
+				}
+			]
+		},
+
+		"default_task_attr" : {
+			"timeout_seconds" : 86400,
+			"max_retries" : 3,
+			"min_retry_interval_millis" : 2000,
+			"retry_on_timeout" : false
+		},
+
+		"output_workflow_filename_template" : "%JOB_NAME%.py",
+		//"script_header" : "#this is a standard header for workflow %WORKFLOW_NAME%\n\ttry:", // can also provide "script_header_template" instead
+		"script_header_template" : "!BB_CONFIG_WRITER_DIR!/Spark/pyspark_airflow_workflow_header.py",
+		//"script_footer" : "\texcept:\n\t\tprint('An exception occurred')", // can also provide "script_footer_template" instead
+		//"code_indent" : "            ", //code indent for workflow code - 12 spaces
+		//"skip_component_name_patterns" : ["audit"],
+		"skip_component_types" : ["email", "start"],
+
+		"workflow_component_template_WORKLET" : "!BB_CONFIG_WRITER_DIR!/Spark/databricksJobs_template_WORKLET.py",
+		"workflow_component_template_START" : "%WORKFLOW_TEMPLATE_PATH%/START_template.py",
+		"workflow_component_template_SESSION" : "!BB_CONFIG_WRITER_DIR!/Spark/pyspark_airflow_SESSION.py",
+		"workflow_component_template_COMMAND" : "!BB_CONFIG_WRITER_DIR!/Spark/databricksJobs_template_COMMAND.py",
+		"workflow_component_template_EMAIL" : "%WORKFLOW_TEMPLATE_PATH%/EMAIL_template.py",
+		"workflow_component_template_ASSIGNMENT" : "!BB_CONFIG_WRITER_DIR!/Spark/ASSIGNMENT_template.py",
+		"workflow_component_template_CONTROL" : "!BB_CONFIG_WRITER_DIR!/Spark/CONTROL_template.py",
+		"workflow_component_template_DECISION" : "!BB_CONFIG_WRITER_DIR!/Spark/DECISION_template.py",
+		
+		"flow_start" : "\n########### Flow definition ###########\n",
+		"dependency_instruction_template" : "%COMPONENT_NAME% << %UPSTREAM_COMPONENT_LIST%",
+		
+		"component_list_spec" : {
+			"list_enclosure" : "[,]", //specify start character sequence before comma and closing char sequence after comma
+			"single_item_use_enclosure_flag" : "0"
+		}
+		//parameter passing.
+		//"single_entry_template_COMMAND" : "#Command label %TOKEN1%\nos.system('%TOKEN2%')",
+		//"single_entry_template_ASSIGNMENT" : "%TOKEN1% = %TOKEN2%"
+	}
+	
+	
+
+}
